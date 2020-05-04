@@ -8,6 +8,13 @@ app.use(express.json());
 // Bodyparser
 app.use(express.urlencoded({extended: false}));
 
+// Enable CORS for all resources
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    next();
+});
+
 // Routes
 app.use('/api/users', require('./app/routes/api/users'));
 app.use('/api/photos', require('./app/routes/api/photos'));
