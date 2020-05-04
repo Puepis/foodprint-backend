@@ -1,5 +1,4 @@
 
-
 const Photo = function(image) {
   this.imageData = image.imageData;
   this.caption = image.caption;

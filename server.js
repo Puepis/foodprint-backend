@@ -1,16 +1,24 @@
 
 const express = require('express');
+var bodyParser = require('body-parser');
+var multer = require('multer');
+var upload = multer();
 
 // Create express app
 const app = express()
-app.use(express.json());
 
-// Bodyparser
-app.use(express.urlencoded({extended: false}));
+// Parsing application/json
+app.use(bodyParser.json());
+
+// Parsing application/xwww-form-urlencoded
+app.use(bodyParser.urlencoded({ extended: true }));
+
+// Parse multipart/form-data
+app.use(upload.array());
+app.use(express.static('public')); // static files
 
 // Routes
 app.use('/api/users', require('./app/routes/api/users'));
-app.use('/api/photos', require('./app/routes/api/photos'));
 
 // Test endpoint - not needed
 app.use('/api/test', require('./app/routes/api/test'));
