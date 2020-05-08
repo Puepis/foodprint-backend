@@ -100,10 +100,12 @@ exports.loginUser = async (req, res) => {
     }
 };
 
-exports.getData = async (req, res) => {
+// Check if token is authorized
+async function isAuthorized(token) {
 
-    // Decode JWT
-    const token = req.get('Authorization');
+    const authorized = false;
+
+     // Decode JWT
     const decoded = jwtDecode(token);
     const timeCreated = decoded.iat;
     const username = decoded.username;
@@ -116,18 +118,37 @@ exports.getData = async (req, res) => {
         // Last login
         const last_login = query_login[0].last_login;
 
-        // Token expired
-        if (timeCreated < last_login) {
-            res.status(401).send("Unauthorized");
-        }
+        // If token expired, return false
+        authorized = !(timeCreated < last_login);
 
-        // Send the id of the user back
-        const query_id = await query("SELECT id FROM users WHERE username = ?", username);
-        const id = query_id[0].id;
-        res.send(id.toString());
-    } catch {
-        res.status(401);
+    } catch (e) {
+        console.log(e);
     }
+    return authorized;
+}
+
+exports.getID = async (req, res) => {
+
+    // Decode JWT
+    const token = req.get('Authorization');
+    const decoded = jwtDecode(token);
+    const username = decoded.username;
+
+    const authorized = await isAuthorized(token);
+    if (authorized) {
+        try {
+            // Send the id of the user back
+            const query_id = await query("SELECT id FROM users WHERE username = ?", username);
+            const id = query_id[0].id;
+            res.send(id.toString());
+        } catch (e) {
+            res.status(401).json(e);
+        }
+    }
+    else {
+        res.status(401).send("Unauthorized token");
+    }
+   
 };
 
 /*
