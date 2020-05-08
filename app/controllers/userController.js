@@ -132,7 +132,6 @@ exports.getID = async (req, res) => {
     // Decode JWT
     const token = req.get('Authorization');
     const decoded = jwtDecode(token);
-    const timeCreated = decoded.iat;
     const username = decoded.username;
 
     const authorized = await isAuthorized(token);
