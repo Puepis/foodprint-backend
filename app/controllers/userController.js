@@ -36,11 +36,9 @@ exports.registerUser = async (req, res) => {
     try {
         console.log("Registering user");
         // TODO: handle case where username is the same
-        const existing = await query("SELECT * FROM users WHERE email = $1", [email]);
+        const existing_users = await query("SELECT * FROM users WHERE email = $1", [email]);
 
-        console.log(existing);
-
-        if (existing.rows.length > 0) {
+        if (existing_users.rows.length > 0) {
             errors.push({msg: 'Email is already registered!'});
             res.status(409).json(errors);
         }
@@ -172,9 +170,10 @@ exports.logout = async (req, res) => {
 
         // Get current time (seconds since epoch)
         const now = Math.round(Date.now() / 1000);
-        await query('UPDATE users SET last_login = ? WHERE username = ?', [now, username]);
+        await query('UPDATE users SET last_login = $1 WHERE username = $2', [now, username]);
         res.status(200).send("Logged Out");
     } catch (e) {
+        console.log(e);
         res.status(401).send("Can't log out");
     }
 }
