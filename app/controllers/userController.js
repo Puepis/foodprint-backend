@@ -119,7 +119,7 @@ async function isAuthorized(token) {
     const username = decoded.username;
 
     try {
-        jwt.verify(token, process.env.KEY, {algorithm: 'HS256'});
+        jwt.verify(token, process.env.SIGNING_KEY, {algorithm: 'HS256'});
 
         const query_login = await query("SELECT last_login FROM users WHERE username = $1", [username]);
 
