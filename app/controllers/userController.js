@@ -146,14 +146,16 @@ exports.getID = async (req, res) => {
     if (authorized) {
         try {
             // Send the id of the user back
-            const query_id = await query("SELECT id FROM users WHERE username = ?", username);
-            const id = query_id[0].id;
+            const id_res = await query("SELECT id FROM users WHERE username = $1", [username]);
+            const id = id_res.rows[0].id;
             res.send(id.toString());
         } catch (e) {
+            console.log(e);
             res.status(401).json(e);
         }
     }
     else {
+        console.log(e);
         res.status(401).send("Unauthorized token");
     }
    
