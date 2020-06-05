@@ -23,6 +23,7 @@ exports.registerUser = async (req, res) => {
 
     let errors = [];
 
+    // TODO: Input validation
     // Check required fields
     if (!email || !username || !password) {
         errors.push({msg: 'Please fill in all fields'});
@@ -39,22 +40,21 @@ exports.registerUser = async (req, res) => {
 
         console.log(existing);
 
-        // Non-empty object
         if (existing.rows.length > 0) {
             errors.push({msg: 'Email is already registered!'});
-            res.status(400).json(errors);
+            res.status(409).json(errors);
         }
         else {
-            const newUser = new User({email, username, password});
-
-            // Hash Passwords
+             // Hash Password
             const salt = await bcrypt.genSalt(10);
-            newUser.password = await bcrypt.hash(newUser.password, salt);
+            const hash = await bcrypt.hash(password, salt);
+
+           const newUser = new User({email, username, hash});
 
             await query("INSERT INTO users (email, username, password) \
             VALUES ($1, $2, $3)", [newUser.email, newUser.username, newUser.password]);
 
-            res.status(201).send("Success");
+            res.status(200).send("Success");
         }
     } catch (e) {
         console.log(e);
@@ -71,7 +71,7 @@ exports.loginUser = async (req, res) => {
         const rows = res.rows;
 
         // User exists
-        if (rows[0]) {
+        if(rows[0]) {
             // Convert binary object to string
             const hash = rows[0].password;
             //const buff = new Buffer.from(rows[0].password, 'base60');
@@ -79,7 +79,6 @@ exports.loginUser = async (req, res) => {
 
             // Verify password
             const match = await bcrypt.compare(password, hash);
-            console.log(match);
 
             // Correct password
             if (match) {
@@ -96,13 +95,16 @@ exports.loginUser = async (req, res) => {
                 res.status(200).send(token);
             }
             else {
+                console.log("Invalid password");
                 res.status(401).send("Invalid Password");
             }
         }
         else {
+            console.log("Invalid username");
             res.status(401).send("Invalid username");
         }
     } catch (e) {
+        console.log(e);
         res.status(401).json(e);
     }
 };
