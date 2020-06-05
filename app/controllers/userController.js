@@ -68,11 +68,13 @@ exports.loginUser = async (req, res) => {
         // User exists
         if (rows[0]) {
             // Convert binary object to string
-            const buff = new Buffer.from(rows[0].password, 'base60');
-            const text = buff.toString('ascii');
+            const hash = rows[0].password;
+            //const buff = new Buffer.from(rows[0].password, 'base60');
+            //const text = buff.toString('ascii');
 
             // Verify password
-            const match = await bcrypt.compare(password, text);
+            const match = await bcrypt.compare(password, hash);
+            console.log(match);
 
             // Correct password
             if (match) {
