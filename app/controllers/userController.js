@@ -33,8 +33,11 @@ exports.registerUser = async (req, res) => {
     }
 
     try {
+        console.log("Registering user");
         // TODO: handle case where username is the same
         const existing = await query("SELECT * FROM users WHERE email = ?", email);
+
+        console.log(existing.length);
 
         // Non-empty object
         if (existing.length > 0) {
