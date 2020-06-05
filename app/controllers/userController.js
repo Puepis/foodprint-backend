@@ -35,12 +35,12 @@ exports.registerUser = async (req, res) => {
     try {
         console.log("Registering user");
         // TODO: handle case where username is the same
-        const existing = await query("SELECT * FROM users WHERE email = ?", email);
+        const existing = await query("SELECT * FROM users WHERE email = $1", [email]);
 
-        console.log(existing.length);
+        console.log(existing);
 
         // Non-empty object
-        if (existing.length > 0) {
+        if (existing.rows.length > 0) {
             errors.push({msg: 'Email is already registered!'});
             res.status(400).json(errors);
         }
@@ -52,7 +52,7 @@ exports.registerUser = async (req, res) => {
             newUser.password = await bcrypt.hash(newUser.password, salt);
 
             await query("INSERT INTO users (email, username, password) \
-            VALUES (?, ?, ?)", [newUser.email, newUser.username, newUser.password]);
+            VALUES ($1, $2, $3)", [newUser.email, newUser.username, newUser.password]);
 
             res.status(201).send("Success");
         }
@@ -67,7 +67,8 @@ exports.loginUser = async (req, res) => {
 
     try {
         // Get user
-        const rows = await query("SELECT * FROM users WHERE username = ?", username);
+        const res = await query("SELECT * FROM users WHERE username = $1", [username]);
+        const rows = res.rows;
 
         // User exists
         if (rows[0]) {
@@ -91,7 +92,7 @@ exports.loginUser = async (req, res) => {
 
                 // Store time created into user table
                 const timeCreated = jwtDecode(token).iat;
-                await query("UPDATE users SET last_login = ? WHERE username = ?", [timeCreated, payload.username]);
+                await query("UPDATE users SET last_login = $1 WHERE username = $2", [timeCreated, payload.username]);
                 res.status(200).send(token);
             }
             else {
@@ -119,10 +120,10 @@ async function isAuthorized(token) {
     try {
         jwt.verify(token, process.env.KEY, {algorithm: 'HS256'});
 
-        const query_login = await query("SELECT last_login FROM users WHERE username = ?", username);
+        const query_login = await query("SELECT last_login FROM users WHERE username = $1", [username]);
 
         // Last login
-        const last_login = query_login[0].last_login;
+        const last_login = query_login.rows[0].last_login;
 
         // If token expired, return false
         authorized = !(timeCreated < last_login);
