@@ -87,7 +87,7 @@ exports.loginUser = async (req, res) => {
                 };
 
                 // Construct JWT
-                const token = jwt.sign(payload, process.env.KEY, {algorithm: 'HS256', expiresIn: "10 minutes"});
+                const token = jwt.sign(payload, process.env.SIGNING_KEY, {algorithm: 'HS256', expiresIn: "10 minutes"});
 
                 // Store time created into user table
                 const timeCreated = jwtDecode(token).iat;
