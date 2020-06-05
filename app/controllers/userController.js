@@ -111,7 +111,7 @@ exports.loginUser = async (req, res) => {
 // Check if token is authorized
 async function isAuthorized(token) {
 
-    const authorized = false;
+    var authorized = false;
 
      // Decode JWT
     const decoded = jwtDecode(token);
