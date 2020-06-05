@@ -67,8 +67,7 @@ exports.loginUser = async (req, res) => {
 
     try {
         // Get user
-        const res = await query("SELECT * FROM users WHERE username = $1", [username]);
-        const rows = res.rows;
+        const rows = (await query("SELECT * FROM users WHERE username = $1", [username])).rows;
 
         // User exists
         if(rows[0]) {
