@@ -3,7 +3,12 @@ const express = require('express');
 var bodyParser = require('body-parser');
 var multer = require('multer');
 var upload = multer();
+var cors = require('cors');
 
+var corsConfig = {
+    origin: false,
+    allowedHeaders: ['Content-Type', 'Authorization', ]
+}
 // Create express app
 const app = express()
 
