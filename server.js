@@ -7,10 +7,13 @@ var cors = require('cors');
 
 var corsConfig = {
     origin: false,
-    allowedHeaders: ['Content-Type', 'Authorization', ]
+    allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept']
 }
+
 // Create express app
 const app = express()
+
+app.use(cors(corsConfig)); // Enable all CORS requests
 
 // Parsing application/json
 app.use(bodyParser.json());
