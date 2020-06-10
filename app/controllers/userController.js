@@ -5,7 +5,7 @@
 
 const jwt = require('jsonwebtoken');
 const jwtDecode = require('jwt-decode');
-const connection = require('../models/dbConnection');
+const connection = require('../config/dbConnection');
 const bcrypt = require('bcrypt');
 
 // Async/await
@@ -36,7 +36,7 @@ exports.registerUser = async (req, res) => {
     try {
         console.log("Registering user");
         // TODO: handle case where username is the same
-        const existing_users = await query("SELECT * FROM users WHERE email = $1", [email]);
+        const existing_users = await query("SELECT id FROM users WHERE email = $1", [email]);
 
         if (existing_users.rows.length > 0) {
             errors.push({msg: 'Email is already registered!'});
@@ -47,10 +47,8 @@ exports.registerUser = async (req, res) => {
             const salt = await bcrypt.genSalt(10);
             const hash = await bcrypt.hash(password, salt);
 
-           const newUser = new User({email, username, hash});
-
             await query("INSERT INTO users (email, username, password) \
-            VALUES ($1, $2, $3)", [newUser.email, newUser.username, newUser.password]);
+            VALUES ($1, $2, $3)", [email, username, hash]);
 
             res.status(200).send("Success");
         }
@@ -65,14 +63,12 @@ exports.loginUser = async (req, res) => {
 
     try {
         // Get user
-        const rows = (await query("SELECT * FROM users WHERE username = $1", [username])).rows;
+        const rows = (await query("SELECT id, username, password FROM users WHERE username = $1", [username])).rows;
 
         // User exists
         if(rows[0]) {
             // Convert binary object to string
             const hash = rows[0].password;
-            //const buff = new Buffer.from(rows[0].password, 'base60');
-            //const text = buff.toString('ascii');
 
             // Verify password
             const match = await bcrypt.compare(password, hash);
@@ -80,6 +76,7 @@ exports.loginUser = async (req, res) => {
             // Correct password
             if (match) {
                 const payload = {
+                    id: rows[0].id,
                     username: rows[0].username,
                 };
 
