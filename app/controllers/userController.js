@@ -150,7 +150,6 @@ exports.getID = async (req, res) => {
         }
     }
     else {
-        console.log(e);
         res.status(401).send("Unauthorized token");
     }
    
