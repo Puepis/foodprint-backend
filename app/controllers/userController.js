@@ -58,6 +58,26 @@ exports.registerUser = async (req, res) => {
     }
 };
 
+async function getPhotos(id) {
+    console.log("Getting photos");
+    try {
+        // Get list of photos
+        var rows = (await query("SELECT * FROM photos WHERE user_id = $1", [id])).rows;
+        rows.forEach(async photo => {
+            photo.data = getPhotoDataFromS3(photo.path); // photo data
+            var restaurant = (await query("SELECT * FROM restaurants WHERE id = $1", [photo.restaurant_id])).rows[0];
+            photo.restaurant_name = restaurant.name;
+            photo.restaurant_rating = restaurant.rating;
+            photo.restaurant_lat = restaurant.lat;
+            photo.restaurant_lng = restaurant.lng;
+        });
+        return rows; 
+    } catch (e) {
+        console.log(e);
+        return null;
+    }
+}
+
 exports.loginUser = async (req, res) => {
     const {username, password} = req.body;
 
@@ -75,9 +95,14 @@ exports.loginUser = async (req, res) => {
 
             // Correct password
             if (match) {
-                const payload = {
-                    id: rows[0].id,
-                    username: rows[0].username,
+                const photos = await getPhotos(rows[0].id);
+                const payload = { // should contain all info
+                    message: photos == null ? "Error retrieving photos. Please log in again." : "Data retrieved",
+                    photos: photos == null ? [] : photos,
+                    user: {
+                        id: rows[0].id,
+                        username: rows[0].username,
+                    }
                 };
 
                 // Construct JWT
@@ -103,57 +128,45 @@ exports.loginUser = async (req, res) => {
     }
 };
 
-// Check if token is authorized
-async function isAuthorized(token) {
-
-    var authorized = false;
-
-     // Decode JWT
-    const decoded = jwtDecode(token);
-    const timeCreated = decoded.iat;
-    const username = decoded.username;
-
-    try {
-        jwt.verify(token, process.env.SIGNING_KEY, {algorithm: 'HS256'});
-
-        const query_login = await query("SELECT last_login FROM users WHERE username = $1", [username]);
-
-        // Last login
-        const last_login = query_login.rows[0].last_login;
-
-        // If token expired, return false
-        authorized = !(timeCreated < last_login);
-
-    } catch (e) {
-        console.log(e);
-    }
-    return authorized;
-}
-
-exports.getID = async (req, res) => {
+exports.getData = async (req, res) => {
 
     // Decode JWT
-    const token = req.get('Authorization');
+    const token = req.token;
     const decoded = jwtDecode(token);
     const username = decoded.username;
+    const timeCreated = decoded.iat;
 
-    const authorized = await isAuthorized(token);
-    if (authorized) {
-        try {
-            // Send the id of the user back
-            const id_res = await query("SELECT id FROM users WHERE username = $1", [username]);
-            const id = id_res.rows[0].id;
-            res.send(id.toString());
-        } catch (e) {
-            console.log(e);
-            res.status(401).json(e);
+
+    jwt.verify(token, process.env.SIGNING_KEY, {algorithm: 'HS256'}, (err, authorizedData) => {
+        if (err) {
+            console.log(err);
+            res.status(403).send("ERROR: Unauthorized token");
+        } else { // check for deprecated token 
+            const result = await query("SELECT last_login FROM users WHERE username = $1", [username]);
+            const last_login = result.rows[0].last_login;
+
+            // Invalid token (deprecated after logout)
+            if (timeCreated < last_login) {
+                res.status(403).send("ERROR: Bad token");
+            } else {
+                res.status(200).json({authorizedData}); // Successful authorization
+            }
         }
-    }
-    else {
-        res.status(401).send("Unauthorized token");
-    }
-   
+    });
 };
+
+// Check if authorization header is defined
+exports.checkToken = (req, res, next) => {
+    const header = req.headers['Authorization'];
+    if (typeof header !== 'undefined') {
+        const bearer = header.split(' ');
+        const token = bearer[1];
+        req.token = token;
+        next();
+    } else {
+        res.sendStatus(403); // header undefined
+    }
+}
 
 /*
  * This function handles the logout logic for the application.

@@ -86,6 +86,7 @@ exports.savePhoto = async (req, res) => {
 };
 
 
+
 exports.retrievePhotos = async (req, res) => {
 
     console.log("Retrieving photos");
@@ -102,7 +103,7 @@ exports.retrievePhotos = async (req, res) => {
             photo.restaurant_lat = restaurant.lat;
             photo.restaurant_lng = restaurant.lng;
         });
-        
+       
         console.log(rows);
         res.status(200).json({photos: rows});
     } catch (e) {
