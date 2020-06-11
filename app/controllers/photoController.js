@@ -94,8 +94,8 @@ exports.retrievePhotos = async (req, res) => {
     try {
         // Get list of photos
         var rows = (await query("SELECT * FROM photos WHERE user_id = $1", [id])).rows;
-        rows.forEach(photo => {
-            photo.data = await getPhotoDataFromS3(photo.path); // photo data
+        rows.forEach(async photo => {
+            photo.data = getPhotoDataFromS3(photo.path); // photo data
             var restaurant = (await query("SELECT * FROM restaurants WHERE id = $1", [photo.restaurant_id])).rows[0];
             photo.restaurant_name = restaurant.name;
             photo.restaurant_rating = restaurant.rating;
