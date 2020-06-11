@@ -48,11 +48,15 @@ async function getPhotoDataFromS3(path) {
 
 exports.savePhoto = async (req, res) => {
 
+    console.log("Saving photo");
     const user_id = req.body.userId;
     const {path, data, details, location} = req.body.image;
+    console.log(path);
 
+    console.log("Uploading image");
     // Store image data in S3 Bucket
     const uploaded = await uploadImageToS3(path, data);
+    console.log(uploaded);
     if (uploaded) {
          try {
             // 1. Check if restaurant exists in restaurant table, if not then insert
@@ -72,6 +76,7 @@ exports.savePhoto = async (req, res) => {
             console.log(e);
             res.status(401).json(e);
         }
+        console.log("Image saved successfully");
         // Successful
         res.status(200).send("Successfully saved");
     }
@@ -83,6 +88,7 @@ exports.savePhoto = async (req, res) => {
 
 exports.retrievePhotos = async (req, res) => {
 
+    console.log("Retrieving photos");
     const id = req.body.id;
 
     try {
@@ -90,9 +96,14 @@ exports.retrievePhotos = async (req, res) => {
         var rows = (await query("SELECT * FROM photos WHERE user_id = $1", [id])).rows;
         rows.forEach(photo => {
             photo.data = await getPhotoDataFromS3(photo.path); // photo data
-            var restaurant = (await query("SELECT name, rating, lat, lng "))
+            var restaurant = (await query("SELECT * FROM restaurants WHERE id = $1", [photo.restaurant_id])).rows[0];
+            photo.restaurant_name = restaurant.name;
+            photo.restaurant_rating = restaurant.rating;
+            photo.restaurant_lat = restaurant.lat;
+            photo.restaurant_lng = restaurant.lng;
         });
         
+        console.log(rows);
         res.status(200).json({photos: rows});
     } catch (e) {
         console.log(e);
