@@ -55,14 +55,12 @@ exports.retrievePhotos = async (id) => {
         // Get list of photos
         var rows = (await query("SELECT * FROM photos WHERE user_id = $1", [id])).rows;
         for (photo of rows) {
-            console.log(photo);
             photo.data = await getPhotoDataFromS3(photo.path); // photo data
             var restaurant = (await query("SELECT * FROM restaurants WHERE id = $1", [photo.restaurant_id])).rows[0];
             photo.restaurant_name = restaurant.name;
             photo.restaurant_rating = restaurant.rating;
             photo.restaurant_lat = restaurant.lat;
             photo.restaurant_lng = restaurant.lng;
-            console.log(photo);
         }
         return rows; 
     } catch (e) {
