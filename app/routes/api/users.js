@@ -10,6 +10,6 @@ const controller = require('../../controllers/userController');
 router.post('/register', controller.registerUser);
 router.post('/login', controller.loginUser);
 router.post('/logout', controller.logout);
-router.get('/data', controller.checkToken, controller.getData);
+router.get('/photos', controller.checkToken, controller.getPhotos);
 
 module.exports = router;

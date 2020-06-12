@@ -58,25 +58,7 @@ exports.registerUser = async (req, res) => {
     }
 };
 
-async function getPhotos(id) {
-    console.log("Getting photos");
-    try {
-        // Get list of photos
-        var rows = (await query("SELECT * FROM photos WHERE user_id = $1", [id])).rows;
-        rows.forEach(async photo => {
-            photo.data = getPhotoDataFromS3(photo.path); // photo data
-            var restaurant = (await query("SELECT * FROM restaurants WHERE id = $1", [photo.restaurant_id])).rows[0];
-            photo.restaurant_name = restaurant.name;
-            photo.restaurant_rating = restaurant.rating;
-            photo.restaurant_lat = restaurant.lat;
-            photo.restaurant_lng = restaurant.lng;
-        });
-        return rows; 
-    } catch (e) {
-        console.log(e);
-        return null;
-    }
-}
+
 
 exports.loginUser = async (req, res) => {
     const {username, password} = req.body;
@@ -95,14 +77,10 @@ exports.loginUser = async (req, res) => {
 
             // Correct password
             if (match) {
-                const photos = await getPhotos(rows[0].id);
-                const payload = { // should contain all info
-                    message: photos == null ? "Error retrieving photos. Please log in again." : "Data retrieved",
-                    photos: photos == null ? [] : photos,
-                    user: {
-                        id: rows[0].id,
-                        username: rows[0].username,
-                    }
+                const payload = { 
+                    sub: rows[0].id, // subject
+                    username: rows[0].username,
+                    admin: false,
                 };
 
                 // Construct JWT
@@ -128,28 +106,54 @@ exports.loginUser = async (req, res) => {
     }
 };
 
-exports.getData = async (req, res) => {
+// Move to separate file
+async function retrievePhotos(id) {
+    console.log("Getting photos");
+    try {
+        // Get list of photos
+        var rows = (await query("SELECT * FROM photos WHERE user_id = $1", [id])).rows;
+        rows.forEach(async photo => {
+            photo.data = getPhotoDataFromS3(photo.path); // photo data
+            var restaurant = (await query("SELECT * FROM restaurants WHERE id = $1", [photo.restaurant_id])).rows[0];
+            photo.restaurant_name = restaurant.name;
+            photo.restaurant_rating = restaurant.rating;
+            photo.restaurant_lat = restaurant.lat;
+            photo.restaurant_lng = restaurant.lng;
+        });
+        return rows; 
+    } catch (e) {
+        console.log(e);
+        return null;
+    }
+}
 
-    // Decode JWT
+exports.getPhotos = async (req, res) => {
+
     const token = req.token;
-    const decoded = jwtDecode(token);
-    const username = decoded.username;
-    const timeCreated = decoded.iat;
 
-
-    jwt.verify(token, process.env.SIGNING_KEY, {algorithm: 'HS256'}, (err, authorizedData) => {
+    jwt.verify(token, process.env.SIGNING_KEY, {algorithm: 'HS256'}, (err, payload) => {
         if (err) {
+
             console.log(err);
             res.status(403).send("ERROR: Unauthorized token");
+
         } else { // check for deprecated token 
-            const result = await query("SELECT last_login FROM users WHERE username = $1", [username]);
+
+            const result = await query("SELECT last_login FROM users WHERE username = $1", [payload.username]);
             const last_login = result.rows[0].last_login;
+            const timeIssued = payload.iat;
 
             // Invalid token (deprecated after logout)
-            if (timeCreated < last_login) {
+            if (timeIssued < last_login) {
                 res.status(403).send("ERROR: Bad token");
             } else {
-                res.status(200).json({authorizedData}); // Successful authorization
+                // Token verified
+                const photos = await retrievePhotos(payload.sub);
+                if (photos == null) {
+                    res.status(400).send("ERROR: Could not retrieve photos");
+                } else {
+                    res.status(200).json({photos: photos}); // Successful authorization
+                }
             }
         }
     });
