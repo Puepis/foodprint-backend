@@ -94,7 +94,7 @@ exports.savePhoto = async (req, res) => {
             }
 
             // 2. Store image details in pgsql table
-            await query ("INSERT INTO photos (path, user_id, name, price, caption, restaurant_id, time_taken) \
+            await query ("INSERT INTO photos (path, user_id, photo_name, price, caption, restaurant_id, time_taken) \
                 VALUES ($1, $2, $3, $4, $5, $6, $7)", [path, user_id, details.name, details.price, details.caption, 
                 location.id, details.timestamp]);
 
