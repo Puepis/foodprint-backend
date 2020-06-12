@@ -76,6 +76,9 @@ exports.savePhoto = async (req, res) => {
     const user_id = req.body.userId;
     const {path, data, details, location} = req.body.image;
     console.log(path);
+    console.log(user_id);
+    console.log(location.name);
+    console.log(details.price);
 
     // Store image data in S3 Bucket
     const uploaded = await uploadImageToS3(path, data);
@@ -83,7 +86,7 @@ exports.savePhoto = async (req, res) => {
     if (uploaded) {
          try {
             // 1. Check if restaurant exists in restaurant table, if not then insert
-            const saved_restaurant = await query("SELECT name FROM restaurants WHERE restaurant_id = $1", [location.id]);
+            const saved_restaurant = await query("SELECT name FROM restaurants WHERE id = $1", [location.id]);
         
             if (saved_restaurant.rows.length == 0) { 
                 await query ("INSERT INTO restaurants (id, name, rating, lat, lng) \
