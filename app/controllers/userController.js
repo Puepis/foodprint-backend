@@ -7,6 +7,7 @@ const jwt = require('jsonwebtoken');
 const jwtDecode = require('jwt-decode');
 const connection = require('../config/dbConnection');
 const bcrypt = require('bcrypt');
+const photos = require('./photoController');
 
 // Async/await
 const util = require('util');
@@ -106,26 +107,7 @@ exports.loginUser = async (req, res) => {
     }
 };
 
-// Move to separate file
-async function retrievePhotos(id) {
-    console.log("Getting photos");
-    try {
-        // Get list of photos
-        var rows = (await query("SELECT * FROM photos WHERE user_id = $1", [id])).rows;
-        rows.forEach(async photo => {
-            photo.data = getPhotoDataFromS3(photo.path); // photo data
-            var restaurant = (await query("SELECT * FROM restaurants WHERE id = $1", [photo.restaurant_id])).rows[0];
-            photo.restaurant_name = restaurant.name;
-            photo.restaurant_rating = restaurant.rating;
-            photo.restaurant_lat = restaurant.lat;
-            photo.restaurant_lng = restaurant.lng;
-        });
-        return rows; 
-    } catch (e) {
-        console.log(e);
-        return null;
-    }
-}
+
 
 exports.getPhotos = async (req, res) => {
 
@@ -148,7 +130,7 @@ exports.getPhotos = async (req, res) => {
                 res.status(403).send("ERROR: Bad token");
             } else {
                 // Token verified
-                const photos = await retrievePhotos(payload.sub);
+                const photos = await photos.retrievePhotos(payload.sub);
                 if (photos == null) {
                     res.status(400).send("ERROR: Could not retrieve photos");
                 } else {

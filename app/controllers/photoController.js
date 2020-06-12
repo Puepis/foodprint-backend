@@ -5,7 +5,7 @@
 
 const connection = require('../config/dbConnection');
 const aws = require('../config/aws');
-const S3_BUCKET = process.env.S3_BUCKET
+const S3_BUCKET = process.env.S3_BUCKET;
 const s3 = new aws.S3(); // service object
 
 // Async/await
@@ -15,6 +15,8 @@ const query = util.promisify(connection.query).bind(connection);
 require('dotenv').config();
 
 async function uploadImageToS3(path, imageData) {
+    console.log("Uploading image");
+    console.log(S3_BUCKET);
     const uploadParams = { // config
         Bucket: S3_BUCKET,
         Key: path,
@@ -32,6 +34,7 @@ async function uploadImageToS3(path, imageData) {
 }
 
 async function getPhotoDataFromS3(path) {
+    console.log("Retrieving image");
     try {
         const fetchParams = {
             Bucket: S3_BUCKET,
@@ -39,11 +42,32 @@ async function getPhotoDataFromS3(path) {
         };
 
         const data = await s3.getObject(fetchParams).promise();
+        console.log(data.Body.toString('binary'));
         return data.Body.toString('binary');
     } catch (e) {
         console.log("Error retrieving file", e);
     }
     return null; // an error occurred
+}
+
+exports.retrievePhotos = async (id) => {
+    console.log("Getting photos");
+    try {
+        // Get list of photos
+        var rows = (await query("SELECT * FROM photos WHERE user_id = $1", [id])).rows;
+        rows.forEach(async photo => {
+            photo.data = getPhotoDataFromS3(photo.path); // photo data
+            var restaurant = (await query("SELECT * FROM restaurants WHERE id = $1", [photo.restaurant_id])).rows[0];
+            photo.restaurant_name = restaurant.name;
+            photo.restaurant_rating = restaurant.rating;
+            photo.restaurant_lat = restaurant.lat;
+            photo.restaurant_lng = restaurant.lng;
+        });
+        return rows; 
+    } catch (e) {
+        console.log(e);
+        return null;
+    }
 }
 
 exports.savePhoto = async (req, res) => {
@@ -53,7 +77,6 @@ exports.savePhoto = async (req, res) => {
     const {path, data, details, location} = req.body.image;
     console.log(path);
 
-    console.log("Uploading image");
     // Store image data in S3 Bucket
     const uploaded = await uploadImageToS3(path, data);
     console.log(uploaded);
@@ -85,9 +108,7 @@ exports.savePhoto = async (req, res) => {
     }
 };
 
-
-
-exports.retrievePhotos = async (req, res) => {
+exports.photos = async (req, res) => {
 
     console.log("Retrieving photos");
     const id = req.body.id;
