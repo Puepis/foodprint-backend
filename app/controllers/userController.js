@@ -161,8 +161,8 @@ exports.getPhotos = async (req, res) => {
 
 // Check if authorization header is defined
 exports.checkToken = (req, res, next) => {
-    console.log(req);
-    const header = req.headers['Authorization'];
+    const header = req.headers['authorization'];
+    console.log(header);
     if (typeof header !== 'undefined') {
         const bearer = header.split(' ');
         const token = bearer[1];
