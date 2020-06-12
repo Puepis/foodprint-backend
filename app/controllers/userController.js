@@ -7,7 +7,7 @@ const jwt = require('jsonwebtoken');
 const jwtDecode = require('jwt-decode');
 const connection = require('../config/dbConnection');
 const bcrypt = require('bcrypt');
-const photos = require('./photoController');
+const photoController = require('./photoController');
 
 // Async/await
 const util = require('util');
@@ -130,7 +130,7 @@ exports.getPhotos = async (req, res) => {
                 res.status(403).send("ERROR: Bad token");
             } else {
                 // Token verified
-                const photos = await photos.retrievePhotos(payload.sub);
+                const photos = await photoController.retrievePhotos(payload.sub);
                 if (photos == null) {
                     res.status(400).send("ERROR: Could not retrieve photos");
                 } else {
