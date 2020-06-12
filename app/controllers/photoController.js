@@ -5,7 +5,7 @@
 
 const connection = require('../config/dbConnection');
 const aws = require('../config/aws');
-const S3_BUCKET = process.env.S3_BUCKET;
+const S3_BUCKET = process.env.S3_BUCKET_NAME;
 const s3 = new aws.S3(); // service object
 
 // Async/await
