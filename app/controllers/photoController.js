@@ -42,7 +42,6 @@ async function getPhotoDataFromS3(path) {
         };
 
         const data = await s3.getObject(fetchParams).promise();
-        console.log(data.Body.toString('binary'));
         return data.Body.toString('binary');
     } catch (e) {
         console.log("Error retrieving file", e);
@@ -55,6 +54,7 @@ exports.retrievePhotos = async (id) => {
     try {
         // Get list of photos
         var rows = (await query("SELECT * FROM photos WHERE user_id = $1", [id])).rows;
+        console.log(rows);
         rows.forEach(async photo => {
             photo.data = getPhotoDataFromS3(photo.path); // photo data
             var restaurant = (await query("SELECT * FROM restaurants WHERE id = $1", [photo.restaurant_id])).rows[0];
@@ -75,10 +75,6 @@ exports.savePhoto = async (req, res) => {
     console.log("Saving photo");
     const user_id = req.body.userId;
     const {path, data, details, location} = req.body.image;
-    console.log(path);
-    console.log(user_id);
-    console.log(location.name);
-    console.log(details.price);
 
     // Store image data in S3 Bucket
     const uploaded = await uploadImageToS3(path, data);
@@ -89,6 +85,7 @@ exports.savePhoto = async (req, res) => {
             const saved_restaurant = await query("SELECT name FROM restaurants WHERE id = $1", [location.id]);
         
             if (saved_restaurant.rows.length == 0) { 
+                console.log("unique restaurant");
                 await query ("INSERT INTO restaurants (id, name, rating, lat, lng) \
                     VALUES ($1, $2, $3, $4, $5)", [location.id, location.name, location.rating, location.lat, location.lng]);
             }
@@ -104,7 +101,6 @@ exports.savePhoto = async (req, res) => {
         }
         // Successful
         res.status(200).send("Successfully saved");
-        console.log("Image saved successfully");
     }
     else {
         res.status(401).send("Error uploading image to S3");
@@ -128,7 +124,6 @@ exports.photos = async (req, res) => {
             photo.restaurant_lng = restaurant.lng;
         });
        
-        console.log(rows);
         res.status(200).json({photos: rows});
     } catch (e) {
         console.log(e);
