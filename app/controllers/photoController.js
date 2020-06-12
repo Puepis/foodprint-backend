@@ -95,16 +95,16 @@ exports.savePhoto = async (req, res) => {
 
             // 2. Store image details in pgsql table
             await query ("INSERT INTO photos (path, data, user_id, name, price, caption, restaurant_id, time_taken) \
-                VALUES ($1, $2, $3, $4, $5, $6, $7", [path, user_id, details.name, details.price, details.caption, 
+                VALUES ($1, $2, $3, $4, $5, $6, $7)", [path, user_id, details.name, details.price, details.caption, 
                 location.id, details.timestamp]);
 
         } catch (e) {
             console.log(e);
-            res.status(401).json(e);
+            res.status(401).send(e);
         }
-        console.log("Image saved successfully");
         // Successful
         res.status(200).send("Successfully saved");
+        console.log("Image saved successfully");
     }
     else {
         res.status(401).send("Error uploading image to S3");
