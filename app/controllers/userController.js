@@ -131,7 +131,7 @@ exports.getPhotos = async (req, res) => {
 
     const token = req.token;
 
-    jwt.verify(token, process.env.SIGNING_KEY, {algorithm: 'HS256'}, (err, payload) => {
+    jwt.verify(token, process.env.SIGNING_KEY, {algorithm: 'HS256'}, async (err, payload) => {
         if (err) {
 
             console.log(err);
