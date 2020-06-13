@@ -22,26 +22,13 @@ exports.registerUser = async (req, res) => {
 
     const { email, username, password} = req.body;
 
-    let errors = [];
-
-    // TODO: Input validation
-    // Check required fields
-    if (!email || !username || !password) {
-        errors.push({msg: 'Please fill in all fields'});
-    }
-
-    if (errors.length > 0) {
-        res.status(400).json({error: true, message: 'Errors found', errors: errors});
-    }
-
     try {
         console.log("Registering user");
         // TODO: handle case where username is the same
         const existing_users = await query("SELECT id FROM users WHERE email = $1", [email]);
 
         if (existing_users.rows.length > 0) {
-            errors.push({msg: 'Email is already registered!'});
-            res.status(409).json(errors);
+            res.sendStatus(409);
         }
         else {
              // Hash Password
@@ -51,7 +38,7 @@ exports.registerUser = async (req, res) => {
             await query("INSERT INTO users (email, username, password) \
             VALUES ($1, $2, $3)", [email, username, hash]);
 
-            res.status(200).send("Success");
+            res.sendStatus(200);
         }
     } catch (e) {
         console.log(e);
@@ -65,18 +52,12 @@ exports.loginUser = async (req, res) => {
     const {username, password} = req.body;
 
     try {
-        // Get user
         const rows = (await query("SELECT id, username, password FROM users WHERE username = $1", [username])).rows;
 
         // User exists
-        if(rows[0]) {
-            // Convert binary object to string
+        if (rows[0]) {
             const hash = rows[0].password;
-
-            // Verify password
-            const match = await bcrypt.compare(password, hash);
-
-            // Correct password
+            const match = await bcrypt.compare(password, hash); // verify password
             if (match) {
                 const payload = { 
                     sub: rows[0].id, // subject
@@ -103,7 +84,7 @@ exports.loginUser = async (req, res) => {
         }
     } catch (e) {
         console.log(e);
-        res.status(401).json(e);
+        res.status(401).send(e);
     }
 };
 
@@ -115,7 +96,6 @@ exports.getPhotos = async (req, res) => {
 
     jwt.verify(token, process.env.SIGNING_KEY, {algorithm: 'HS256'}, async (err, payload) => {
         if (err) {
-
             console.log(err);
             res.status(403).send("ERROR: Unauthorized token");
 
@@ -167,9 +147,9 @@ exports.logout = async (req, res) => {
         // Get current time (seconds since epoch)
         const now = Math.round(Date.now() / 1000);
         await query('UPDATE users SET last_login = $1 WHERE username = $2', [now, username]);
-        res.status(200).send("Logged Out");
+        res.sendStatus(200);
     } catch (e) {
         console.log(e);
-        res.status(401).send("Can't log out");
+        res.status(401).send(e);
     }
 }

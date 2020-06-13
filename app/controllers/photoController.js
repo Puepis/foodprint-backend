@@ -34,7 +34,6 @@ async function uploadImageToS3(path, imageData) {
 }
 
 async function getPhotoDataFromS3(path) {
-    console.log("Retrieving image");
     try {
         const fetchParams = {
             Bucket: S3_BUCKET,
