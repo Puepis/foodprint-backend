@@ -16,10 +16,10 @@ const app = express()
 app.use(cors(corsConfig)); // Enable all CORS requests
 
 // Parsing application/json
-app.use(express.json({extended: true}));
+app.use(express.json({extended: true, limit: '10mb'}));
 
 // Parsing application/xwww-form-urlencoded
-app.use(express.urlencoded({ extended: true}));
+app.use(express.urlencoded({ extended: true, limit: '10mb'}));
 
 // Parse multipart/form-data
 app.use(upload.array());
