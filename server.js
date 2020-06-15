@@ -6,7 +6,8 @@ var upload = multer();
 var cors = require('cors');
 
 var corsConfig = {
-    origin: "https://enigma-01.github.io",
+    origin: false,
+    // origin: "https://enigma-01.github.io",
     allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept']
 }
 
