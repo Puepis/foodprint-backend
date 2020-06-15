@@ -15,8 +15,6 @@ const query = util.promisify(connection.query).bind(connection);
 require('dotenv').config();
 
 async function uploadImageToS3(path, imageData) {
-    console.log("Uploading image");
-    console.log(S3_BUCKET);
     const uploadParams = { // config
         Bucket: S3_BUCKET,
         Key: path,
