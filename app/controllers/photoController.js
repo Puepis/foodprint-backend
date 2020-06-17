@@ -151,14 +151,14 @@ exports.deletePhoto = async (req, res) => {
     if (successful) {
         try {
             await query("DELETE FROM photos WHERE path = $1", [path]);
-            res.statusCode(200);
+            res.sendStatus(200);
         } catch (e) {
             console.log(e);
-            res.statusCode(401);
+            res.sendStatus(401);
         }
     }
     else {
-        res.statusCode(401);
+        res.sendStatus(401);
     }
 };
 
