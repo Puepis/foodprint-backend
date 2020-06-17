@@ -46,6 +46,20 @@ async function getPhotoDataFromS3(path) {
     return null; // an error occurred
 }
 
+async function deletePhotoFromS3(path) {
+    try {
+        const params = {
+            Bucket: S3_BUCKET,
+            Key: path
+        }
+        await s3.deleteObject(params).promise();
+        return true;
+    } catch (e) {
+        console.log("Error deleting file", e);
+    }
+    return false;
+}
+
 exports.retrievePhotos = async (id) => {
     console.log("Getting photos");
     try {
@@ -123,12 +137,29 @@ exports.photos = async (req, res) => {
         res.status(200).json({photos: rows});
     } catch (e) {
         console.log(e);
-        res.status(401).json(e);
+        res.status(401).send(e);
     }
 };
 
 
+// Delete a photo from the db and S3 
 exports.deletePhoto = async (req, res) => {
+    const path = req.headers['photo_path'];
+    
+    // First remove photo from S3, then remove table row
+    var successful = await deletePhotoFromS3(path);
+    if (successful) {
+        try {
+            await query("DELETE FROM photos WHERE path = $1", [path]);
+            res.statusCode(200);
+        } catch (e) {
+            console.log(e);
+            res.statusCode(401);
+        }
+    }
+    else {
+        res.statusCode(401);
+    }
 };
 
 exports.editPhoto = async (req, res) => {
