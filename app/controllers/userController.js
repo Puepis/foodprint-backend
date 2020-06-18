@@ -103,7 +103,7 @@ exports.getPhotos = async (req, res) => {
     }
 };
 
-exports.getFoodprint = (req, res) => {
+exports.getFoodprint = async (req, res) => {
     const token = req.token;
     const decoded = jwtDecode(token);
     const id = decoded.sub;
