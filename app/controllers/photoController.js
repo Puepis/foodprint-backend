@@ -87,8 +87,7 @@ exports.getFoodprint = async (id) => {
         SELECT DISTINCT restaurant_id FROM photos WHERE user_id = $1 \
         ) ORDER BY r.name";
     
-    const photoQuery = "SELECT path, photo_name, price, caption, time_taken FROM \
-        photos WHERE restaurant_id = $1 AND user_id = $2";
+    const photoQuery = "SELECT * FROM photos WHERE restaurant_id = $1 AND user_id = $2";
 
     try {
         var restaurants = (await query(restaurantQuery, [id])).rows;
