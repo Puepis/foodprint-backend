@@ -92,7 +92,7 @@ exports.getFoodprint = async (id) => {
     try {
         var restaurants = (await query(restaurantQuery, [id])).rows;
         for (r of restaurants) {
-            var photos = (await query(photoQuery, [r.id, id])).rows;
+            var photos = (await query(photoQuery, [r.restaurant_id, id])).rows;
             console.log(photos);
             for (p of photos) {
                 p.data = await getPhotoDataFromS3(p.path);
