@@ -122,10 +122,11 @@ exports.verifyToken = (req, res, next) => {
     if (typeof header !== 'undefined') {
         const bearer = header.split(' ');
         const token = bearer[1];
+        console.log(token);
+        
 
         jwt.verify(token, process.env.SIGNING_KEY, {algorithm: 'HS256'}, async (err, payload) => {
             if (err) {
-                console.log(err);
                 res.status(403).send("ERROR: Unauthorized token");
 
             } else { // check for deprecated token 
