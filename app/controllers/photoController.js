@@ -63,9 +63,9 @@ async function deletePhotoFromS3(path) {
 // Get a list of all user photos, sorted by restaurant
 exports.retrievePhotos = async (id) => {
     console.log("Getting photos");
-    const photoQuery = "SELECT r.id, r.name restaurant_name, r.rating, r.lat, r.lng, p.path, p.photo_name, p.price, \
-        p.caption, p.time_taken FROM restaurants r INNER JOIN photos p ON r.id = p.restaurant_id WHERE p.user_id = $1 \
-        ORDER BY r.name";
+    const photoQuery = "SELECT r.id restaurant_id, r.name restaurant_name, r.rating restaurant_rating, r.lat restaurant_lat, \
+        r.lng restaurant_lng, p.path, p.photo_name, p.price, p.caption, p.time_taken FROM restaurants r \
+        INNER JOIN photos p ON r.id = p.restaurant_id WHERE p.user_id = $1 ORDER BY r.name";
 
     try {
         var rows = (await query(photoQuery, [id])).rows;
