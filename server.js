@@ -8,7 +8,7 @@ var cors = require('cors');
 var corsConfig = {
     origin: "*",
     // origin: "https://enigma-01.github.io",
-    allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept']
+    allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
 }
 
 // Create express app
