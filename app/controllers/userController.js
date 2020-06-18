@@ -88,52 +88,66 @@ exports.loginUser = async (req, res) => {
     }
 };
 
-
-
 exports.getPhotos = async (req, res) => {
 
     const token = req.token;
+    const decoded = jwtDecode(token);
+    const id = decoded.sub;
 
-    jwt.verify(token, process.env.SIGNING_KEY, {algorithm: 'HS256'}, async (err, payload) => {
-        if (err) {
-            console.log(err);
-            res.status(403).send("ERROR: Unauthorized token");
+    // Token verified
+    const photos = await photoController.retrievePhotos(id);
+    if (photos == null) {
+        res.status(400).send("ERROR: Could not retrieve photos");
+    } else {
+        res.status(200).json({photos: photos}); // Successful authorization
+    }
+};
 
-        } else { // check for deprecated token 
-
-            const result = await query("SELECT last_login FROM users WHERE username = $1", [payload.username]);
-            const last_login = result.rows[0].last_login;
-            const timeIssued = payload.iat;
-
-            // Invalid token (deprecated after logout)
-            if (timeIssued < last_login) {
-                res.status(403).send("ERROR: Bad token");
-            } else {
-                // Token verified
-                const photos = await photoController.retrievePhotos(payload.sub);
-                if (photos == null) {
-                    res.status(400).send("ERROR: Could not retrieve photos");
-                } else {
-                    res.status(200).json({photos: photos}); // Successful authorization
-                }
-            }
-        }
-    });
+exports.getFoodprint = (req, res) => {
+    const token = req.token;
+    const decoded = jwtDecode(token);
+    const id = decoded.sub;
+    
+    const foodprint = await photoController.getFoodprint(id);
+    if (foodprint == null) {
+        res.status(400).send("ERROR: Could not retrieve foodprint");
+    } else {
+        res.status(200).json({foodprint: foodprint});
+    }
 };
 
 // Check if authorization header is defined
-exports.checkToken = (req, res, next) => {
+exports.verifyToken = (req, res, next) => {
     const header = req.headers['authorization'];
     if (typeof header !== 'undefined') {
         const bearer = header.split(' ');
         const token = bearer[1];
-        req.token = token;
-        next();
+
+        jwt.verify(token, process.env.SIGNING_KEY, {algorithm: 'HS256'}, async (err, payload) => {
+            if (err) {
+                console.log(err);
+                res.status(403).send("ERROR: Unauthorized token");
+
+            } else { // check for deprecated token 
+
+                const result = await query("SELECT last_login FROM users WHERE username = $1", [payload.username]);
+                const last_login = result.rows[0].last_login;
+                const timeIssued = payload.iat;
+
+                // Invalid token 
+                if (timeIssued < last_login) {
+                    res.status(403).send("ERROR: Bad token");
+                } else {
+                    next(); // authorized
+                }
+            }
+        });
     } else {
         res.sendStatus(403); // header undefined
     }
 }
 
+    
 /*
  * This function handles the logout logic for the application.
  */

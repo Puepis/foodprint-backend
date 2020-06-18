@@ -60,20 +60,45 @@ async function deletePhotoFromS3(path) {
     return false;
 }
 
+// Get a list of all user photos, sorted by restaurant
 exports.retrievePhotos = async (id) => {
     console.log("Getting photos");
+    const photoQuery = "SELECT r.id, r.name restaurant_name, r.rating, r.lat, r.lng, p.path, p.photo_name, p.price, \
+        p.caption, p.time_taken FROM restaurants r INNER JOIN photos p ON r.id = p.restaurant_id WHERE p.user_id = $1 \
+        ORDER BY r.name";
+
     try {
-        // Get list of photos
-        var rows = (await query("SELECT * FROM photos WHERE user_id = $1", [id])).rows;
+        var rows = (await query(photoQuery, [id])).rows;
         for (photo of rows) {
             photo.data = await getPhotoDataFromS3(photo.path); // photo data
-            var restaurant = (await query("SELECT * FROM restaurants WHERE id = $1", [photo.restaurant_id])).rows[0];
-            photo.restaurant_name = restaurant.name;
-            photo.restaurant_rating = restaurant.rating;
-            photo.restaurant_lat = restaurant.lat;
-            photo.restaurant_lng = restaurant.lng;
         }
-        return rows; 
+        return rows;
+    } catch (e) {
+        console.log(e);
+        return null;
+    }
+}
+
+// Sort photos by restaurant 
+exports.getFoodprint = async (id) => {
+    console.log("Getting foodprint");
+    const restaurantQuery = "SELECT * FROM restaurants r WHERE id IN ( \
+        SELECT DISTINCT restaurant_id FROM photos WHERE user_id = $1 \
+        ) ORDER BY r.name";
+    
+    const photoQuery = "SELECT (path, photo_name, price, caption, time_taken) FROM \
+        photos WHERE restaurant_id = $1 AND user_id = $2";
+
+    try {
+        var restaurants = (await query(restaurantQuery, [id])).rows;
+        for (r of restaurants) {
+            var photos = (await query(photoQuery, [r.id, id])).rows;
+            for (p of photos) {
+                p.data = await getPhotoDataFromS3(p.path);
+            }
+            r.photos = photos;
+        }
+        return restaurants;
     } catch (e) {
         console.log(e);
         return null;
