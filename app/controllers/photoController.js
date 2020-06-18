@@ -82,11 +82,12 @@ exports.retrievePhotos = async (id) => {
 // Sort photos by restaurant 
 exports.getFoodprint = async (id) => {
     console.log("Getting foodprint");
-    const restaurantQuery = "SELECT * FROM restaurants r WHERE id IN ( \
+    const restaurantQuery = "SELECT id restaurant_id, name restaurant_name, rating restaurant_rating, \
+        lat restaurant_lat, lng restaurant_lng FROM restaurants r WHERE id IN ( \
         SELECT DISTINCT restaurant_id FROM photos WHERE user_id = $1 \
         ) ORDER BY r.name";
     
-    const photoQuery = "SELECT (path, photo_name, price, caption, time_taken) FROM \
+    const photoQuery = "SELECT path, photo_name, price, caption, time_taken FROM \
         photos WHERE restaurant_id = $1 AND user_id = $2";
 
     try {
