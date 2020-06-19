@@ -77,8 +77,47 @@ exports.retrievePhotos = async (id) => {
     }
 }
 
+exports.retrieveFoodprint2 = async (id) => {
+    const photos = this.retrievePhotos(id);
+    var result = [];
+    if (photos != null) {
+        var prevResId = "";
+        var prevRestaurant;
+        for (p of photos) {
+            var newPhoto = {
+                data: p.data,
+                path: p.path,
+                photo_name: p.photo_name,
+                price: p.price,
+                caption: p.caption,
+                restaurant_id: p.restaurant_id,
+                time_taken: p.time_taken
+            }
+
+            if (p.restaurant_id.localeCompare(prevResId) == 0) { // same restaurant
+                prevRestaurant.photos.push(newPhoto);
+            }
+            else { // different restaurant
+                prevResId = p.restaurant_id;
+                if (prevRestaurant != null) {
+                    result.push(prevRestaurant);
+                }
+                prevRestaurant = { // set to current restaurant
+                    restaurant_id: p.restaurant_id,
+                    restaurant_name: p.restaurant_name,
+                    restaurant_rating: p.restaurant_rating,
+                    restaurant_lat: p.restaurant_lat,
+                    restaurant_lng: p.restaurant_lng,
+                    photos: [newPhoto]
+                }
+            }
+        }
+    }
+    return result;
+};
+
 // Sort photos by restaurant 
-exports.getFoodprint = async (id) => {
+exports.retrieveFoodprint = async (id) => {
     const restaurantQuery = "SELECT id restaurant_id, name restaurant_name, rating restaurant_rating, \
         lat restaurant_lat, lng restaurant_lng FROM restaurants r WHERE id IN ( \
         SELECT DISTINCT restaurant_id FROM photos WHERE user_id = $1 \
