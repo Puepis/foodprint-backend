@@ -23,7 +23,6 @@ exports.registerUser = async (req, res) => {
     const { email, username, password} = req.body;
 
     try {
-        console.log("Registering user");
         // TODO: handle case where username is the same
         const existing_users = await query("SELECT id FROM users WHERE email = $1", [email]);
 
@@ -74,12 +73,10 @@ exports.loginUser = async (req, res) => {
                 res.status(200).send(token);
             }
             else {
-                console.log("Invalid password");
                 res.status(401).send("Invalid Password");
             }
         }
         else {
-            console.log("Invalid username");
             res.status(401).send("Invalid username");
         }
     } catch (e) {
