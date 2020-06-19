@@ -79,7 +79,6 @@ exports.retrievePhotos = async (id) => {
 
 exports.retrieveFoodprint2 = async (id) => {
     const photos = await this.retrievePhotos(id);
-    console.log(photos);
     var result = [];
     if (photos != null) {
         var prevResId = "";
@@ -113,6 +112,7 @@ exports.retrieveFoodprint2 = async (id) => {
                 }
             }
         }
+        result.push(prevRestaurant);
     }
     return result;
 };
