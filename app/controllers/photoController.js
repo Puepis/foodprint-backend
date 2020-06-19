@@ -78,7 +78,7 @@ exports.retrievePhotos = async (id) => {
 }
 
 exports.retrieveFoodprint2 = async (id) => {
-    const photos = this.retrievePhotos(id);
+    const photos = await this.retrievePhotos(id);
     console.log(photos);
     var result = [];
     if (photos != null) {
