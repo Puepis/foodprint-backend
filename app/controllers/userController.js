@@ -105,7 +105,7 @@ exports.getFoodprint = async (req, res) => {
     const decoded = jwtDecode(token);
     const id = decoded.sub;
     
-    const foodprint = await photoController.retrieveFoodprint2(id);
+    const foodprint = await photoController.retrieveFoodprint(id);
     if (foodprint == null) {
         res.status(400).send("ERROR: Could not retrieve foodprint");
     } else {
