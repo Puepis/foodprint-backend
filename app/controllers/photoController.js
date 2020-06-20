@@ -178,30 +178,6 @@ exports.savePhoto = async (req, res) => {
     }
 };
 
-exports.photos = async (req, res) => {
-
-    const id = req.body.id;
-
-    try {
-        // Get list of photos
-        var rows = (await query("SELECT * FROM photos WHERE user_id = $1", [id])).rows;
-        rows.forEach(async photo => {
-            photo.data = getPhotoDataFromS3(photo.path); // photo data
-            var restaurant = (await query("SELECT * FROM restaurants WHERE id = $1", [photo.restaurant_id])).rows[0];
-            photo.restaurant_name = restaurant.name;
-            photo.restaurant_rating = restaurant.rating;
-            photo.restaurant_lat = restaurant.lat;
-            photo.restaurant_lng = restaurant.lng;
-        });
-       
-        res.status(200).json({photos: rows});
-    } catch (e) {
-        console.log(e);
-        res.status(401).send(e);
-    }
-};
-
-
 // Delete a photo from the db and S3 
 exports.deletePhoto = async (req, res) => {
     const path = req.headers['photo_path'];
@@ -223,4 +199,13 @@ exports.deletePhoto = async (req, res) => {
 };
 
 exports.editPhoto = async (req, res) => {
+    const {path, photo_name, price, caption} = req.body;
+    try {
+        await query("UPDATE photos SET photo_name = $1, price = $2, caption = $3 WHERE path = $4", 
+            [photo_name, price, caption, path]);
+        res.sendStatus(200);
+    } catch (e) {
+        console.log(e);
+        res.sendStatus(401);
+    }
 };

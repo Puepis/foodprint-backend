@@ -8,8 +8,7 @@ const router = express.Router();
 const controller = require('../../controllers/photoController');
 
 router.post('/', controller.savePhoto);
+router.put('/', controller.editPhoto);
 router.delete('/', controller.deletePhoto);
-router.post('/get-photos', controller.photos);
-//router.get('/edit', controller.editPhoto);
 
 module.exports = router;
