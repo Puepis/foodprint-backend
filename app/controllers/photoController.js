@@ -112,7 +112,9 @@ exports.retrieveFoodprint2 = async (id) => {
                 }
             }
         }
-        result.push(prevRestaurant);
+        if (prevRestaurant != null) {
+            result.push(prevRestaurant);
+        }
     }
     return result;
 };
