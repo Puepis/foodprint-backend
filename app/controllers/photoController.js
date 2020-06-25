@@ -81,7 +81,7 @@ exports.retrievePhotos = async (id) => {
 // Sort photos by restaurant 
 exports.retrieveFoodprint = async (id) => {
     const restaurantQuery = "SELECT id restaurant_id, name restaurant_name, rating restaurant_rating, \
-        lat restaurant_lat, lng restaurant_lng address restaurant_address, price_level FROM restaurants r WHERE id IN ( \
+        lat restaurant_lat, lng restaurant_lng, address restaurant_address, price_level FROM restaurants r WHERE id IN ( \
         SELECT DISTINCT restaurant_id FROM photos WHERE user_id = $1 \
         ) ORDER BY r.name";
     
