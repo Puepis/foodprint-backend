@@ -96,6 +96,7 @@ exports.retrieveFoodprint = async (id) => {
             r.photos = photos;
         }
         return restaurants;
+        console.log(restaurants);
     } catch (e) {
         console.log(e);
         return null;
