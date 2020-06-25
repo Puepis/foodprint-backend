@@ -15,16 +15,12 @@ const query = util.promisify(connection.query).bind(connection);
 
 require('dotenv').config();
 
-// User object
-const User = require('../models/userModel');
-
 exports.registerUser = async (req, res) => {
 
     const { email, username, password} = req.body;
 
     try {
-        // TODO: handle case where username is the same
-        const existing_users = await query("SELECT id FROM users WHERE email = $1", [email]);
+        const existing_users = await query("SELECT id FROM users WHERE email = $1 OR username = $2", [email, username]);
 
         if (existing_users.rows.length > 0) {
             res.sendStatus(409);
