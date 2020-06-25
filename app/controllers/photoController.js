@@ -62,9 +62,8 @@ async function deletePhotoFromS3(path) {
 // Get a list of all user photos, sorted by restaurant
 exports.retrievePhotos = async (id) => {
     const photoQuery = "SELECT r.id restaurant_id, r.name restaurant_name, r.rating restaurant_rating, r.lat restaurant_lat, \
-        r.lng restaurant_lng, r.address restaurant_address, r.price_level price_level, p.path, p.photo_name, p.price, \
-        p.comments, p.time_taken FROM restaurants r INNER JOIN photos p ON r.id = p.restaurant_id WHERE p.user_id = $1 \
-        ORDER BY r.name";
+        r.lng restaurant_lng, p.path, p.photo_name, p.price, p.comments, p.time_taken FROM restaurants r INNER JOIN \
+        photos p ON r.id = p.restaurant_id WHERE p.user_id = $1 ORDER BY r.name";
 
     try {
         var rows = (await query(photoQuery, [id])).rows;
@@ -81,7 +80,7 @@ exports.retrievePhotos = async (id) => {
 // Sort photos by restaurant 
 exports.retrieveFoodprint = async (id) => {
     const restaurantQuery = "SELECT id restaurant_id, name restaurant_name, rating restaurant_rating, \
-        lat restaurant_lat, lng restaurant_lng, address restaurant_address, price_level FROM restaurants r WHERE id IN ( \
+        lat restaurant_lat, lng restaurant_lng FROM restaurants r WHERE id IN ( \
         SELECT DISTINCT restaurant_id FROM photos WHERE user_id = $1 \
         ) ORDER BY r.name";
     
@@ -116,9 +115,9 @@ exports.savePhoto = async (req, res) => {
             const saved_restaurant = await query("SELECT name FROM restaurants WHERE id = $1", [location.id]);
         
             if (saved_restaurant.rows.length == 0) { 
-                await query ("INSERT INTO restaurants (id, name, rating, lat, lng, address, price_level) \
-                    VALUES ($1, $2, $3, $4, $5, $6, $7)", [location.id, location.name, location.rating, location.lat, 
-                        location.lng, location.address, location.price_level]);
+                await query ("INSERT INTO restaurants (id, name, rating, lat, lng) \
+                    VALUES ($1, $2, $3, $4, $5)", [location.id, location.name, location.rating, location.lat, 
+                        location.lng]);
             }
 
             // 2. Store image details in pgsql table
