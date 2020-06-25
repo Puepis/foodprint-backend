@@ -62,8 +62,9 @@ async function deletePhotoFromS3(path) {
 // Get a list of all user photos, sorted by restaurant
 exports.retrievePhotos = async (id) => {
     const photoQuery = "SELECT r.id restaurant_id, r.name restaurant_name, r.rating restaurant_rating, r.lat restaurant_lat, \
-        r.lng restaurant_lng, p.path, p.photo_name, p.price, p.caption, p.time_taken FROM restaurants r \
-        INNER JOIN photos p ON r.id = p.restaurant_id WHERE p.user_id = $1 ORDER BY r.name";
+        r.lng restaurant_lng, r.address restaurant_address, r.price_level price_level, p.path, p.photo_name, p.price, \
+        p.comments, p.time_taken FROM restaurants r INNER JOIN photos p ON r.id = p.restaurant_id WHERE p.user_id = $1 \
+        ORDER BY r.name";
 
     try {
         var rows = (await query(photoQuery, [id])).rows;
@@ -77,56 +78,14 @@ exports.retrievePhotos = async (id) => {
     }
 }
 
-exports.retrieveFoodprint2 = async (id) => {
-    const photos = await this.retrievePhotos(id);
-    var result = [];
-    if (photos != null) {
-        var prevResId = "";
-        var prevRestaurant;
-        for (p of photos) {
-            var newPhoto = {
-                data: p.data,
-                path: p.path,
-                photo_name: p.photo_name,
-                price: p.price,
-                caption: p.caption,
-                restaurant_id: p.restaurant_id,
-                time_taken: p.time_taken
-            }
-
-            if (p.restaurant_id.localeCompare(prevResId) == 0) { // same restaurant
-                prevRestaurant.photos.push(newPhoto);
-            }
-            else { // different restaurant
-                prevResId = p.restaurant_id;
-                if (prevRestaurant != null) {
-                    result.push(prevRestaurant);
-                }
-                prevRestaurant = { // set to current restaurant
-                    restaurant_id: p.restaurant_id,
-                    restaurant_name: p.restaurant_name,
-                    restaurant_rating: p.restaurant_rating,
-                    restaurant_lat: p.restaurant_lat,
-                    restaurant_lng: p.restaurant_lng,
-                    photos: [newPhoto]
-                }
-            }
-        }
-        if (prevRestaurant != null) {
-            result.push(prevRestaurant);
-        }
-    }
-    return result;
-};
-
 // Sort photos by restaurant 
 exports.retrieveFoodprint = async (id) => {
     const restaurantQuery = "SELECT id restaurant_id, name restaurant_name, rating restaurant_rating, \
-        lat restaurant_lat, lng restaurant_lng FROM restaurants r WHERE id IN ( \
+        lat restaurant_lat, lng restaurant_lng address restaurant_address, price_level FROM restaurants r WHERE id IN ( \
         SELECT DISTINCT restaurant_id FROM photos WHERE user_id = $1 \
         ) ORDER BY r.name";
     
-    const photoQuery = "SELECT * FROM photos WHERE restaurant_id = $1 AND user_id = $2";
+    const photoQuery = "SELECT path, photo_name, price, comments, time_taken FROM photos WHERE restaurant_id = $1 AND user_id = $2";
 
     try {
         var restaurants = (await query(restaurantQuery, [id])).rows;
@@ -157,13 +116,14 @@ exports.savePhoto = async (req, res) => {
             const saved_restaurant = await query("SELECT name FROM restaurants WHERE id = $1", [location.id]);
         
             if (saved_restaurant.rows.length == 0) { 
-                await query ("INSERT INTO restaurants (id, name, rating, lat, lng) \
-                    VALUES ($1, $2, $3, $4, $5)", [location.id, location.name, location.rating, location.lat, location.lng]);
+                await query ("INSERT INTO restaurants (id, name, rating, lat, lng, address, price_level) \
+                    VALUES ($1, $2, $3, $4, $5, $6, $7)", [location.id, location.name, location.rating, location.lat, 
+                        location.lng, location.address, location.price_level]);
             }
 
             // 2. Store image details in pgsql table
-            await query ("INSERT INTO photos (path, user_id, photo_name, price, caption, restaurant_id, time_taken) \
-                VALUES ($1, $2, $3, $4, $5, $6, $7)", [path, user_id, details.name, details.price, details.caption, 
+            await query ("INSERT INTO photos (path, user_id, photo_name, price, comments, restaurant_id, time_taken) \
+                VALUES ($1, $2, $3, $4, $5, $6, $7)", [path, user_id, details.name, details.price, details.comments, 
                 location.id, details.timestamp]);
 
         } catch (e) {
@@ -199,10 +159,10 @@ exports.deletePhoto = async (req, res) => {
 };
 
 exports.editPhoto = async (req, res) => {
-    const {path, photo_name, price, caption} = req.body;
+    const {path, photo_name, price, comments} = req.body;
     try {
-        await query("UPDATE photos SET photo_name = $1, price = $2, caption = $3 WHERE path = $4", 
-            [photo_name, price, caption, path]);
+        await query("UPDATE photos SET photo_name = $1, price = $2, comments = $3 WHERE path = $4", 
+            [photo_name, price, comments, path]);
         res.sendStatus(200);
     } catch (e) {
         console.log(e);
