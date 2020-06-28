@@ -3,9 +3,9 @@
  * This module defines the endpoints for users
  */
 
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const controller = require('../../controllers/userController');
+import controller = require('../../controllers/userController');
 
 router.post('/register', controller.registerUser);
 router.post('/login', controller.loginUser);

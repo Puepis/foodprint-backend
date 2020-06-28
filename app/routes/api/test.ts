@@ -4,9 +4,9 @@
  * This module defines the endpoints for restaurants
  */
 
-const express = require('express');
+import express from 'express';
 const router = express.Router();
 
-router.get('/', (req, res) => res.send('Base Endpoint'));
+router.get('/', (req: any, res: any) => res.send('Base Endpoint'));
 
 module.exports = router;
