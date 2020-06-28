@@ -6,7 +6,7 @@
   "scripts": {
     "tsc": "tsc",
     "prod": "tsc && node ./build/server.js",
-    "start": "node server.js",
+    "start": "node ./build/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Philips Xu",
