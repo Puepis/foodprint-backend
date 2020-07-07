@@ -24,7 +24,7 @@ async function uploadImageToS3(path: string, imageData: any): Promise<String | n
 
         try {
             const data = await s3.upload(uploadParams).promise(); // upload image
-            console.log("Location: ${data.Location}");
+            console.log(data.Location);
             return data.Location;
         } catch (e) {
             console.log("Error uploading the image", e);
@@ -110,7 +110,7 @@ export async function savePhoto(req: any, res: any): Promise<void> {
 
             // 2. Store image details in pgsql table
             await connection.query("INSERT INTO photos (path, url, user_id, photo_name, price, comments, restaurant_id, time_taken) \
-                VALUES ($1, $2, $3, $4, $5, $6, $7)", [path, url, user_id, details.name, details.price, details.comments,
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", [path, url, user_id, details.name, details.price, details.comments,
                 location.id, details.timestamp]);
 
         } catch (e) {
