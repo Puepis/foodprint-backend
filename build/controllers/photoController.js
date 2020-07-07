@@ -32,7 +32,7 @@ function uploadImageToS3(path, imageData) {
             };
             try {
                 const data = yield s3.upload(uploadParams).promise(); // upload image
-                console.log("Location: ${data.Location}");
+                console.log(data.Location);
                 return data.Location;
             }
             catch (e) {
@@ -119,7 +119,7 @@ function savePhoto(req, res) {
                 }
                 // 2. Store image details in pgsql table
                 yield connection.query("INSERT INTO photos (path, url, user_id, photo_name, price, comments, restaurant_id, time_taken) \
-                VALUES ($1, $2, $3, $4, $5, $6, $7)", [path, url, user_id, details.name, details.price, details.comments,
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", [path, url, user_id, details.name, details.price, details.comments,
                     location.id, details.timestamp]);
             }
             catch (e) {
