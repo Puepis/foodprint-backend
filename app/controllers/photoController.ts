@@ -118,7 +118,7 @@ export async function savePhoto(req: any, res: any): Promise<void> {
             res.sendStatus(401);
         }
         // Successful
-        res.send(200).send(url);
+        res.send(200).json(url);
     }
     else {
         res.sendStatus(401);
