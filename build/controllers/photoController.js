@@ -127,7 +127,7 @@ function savePhoto(req, res) {
                 res.sendStatus(401);
             }
             // Successful
-            res.send(200).send(url);
+            res.send(200).json(url);
         }
         else {
             res.sendStatus(401);
