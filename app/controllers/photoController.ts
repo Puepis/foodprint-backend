@@ -23,8 +23,9 @@ async function uploadImageToS3(path: string, imageData: any): Promise<String | n
         };
 
         try {
+            console.log("Uploading image");
             const data = await s3.upload(uploadParams).promise(); // upload image
-            console.log(data.Location);
+            console.log("Location: ${data.Location}");
             return data.Location;
         } catch (e) {
             console.log("Error uploading the image", e);
@@ -110,11 +111,14 @@ export async function retrieveFoodprint(id: number): Promise<any[] | null> {
 
 export async function savePhoto(req: any, res: any): Promise<void> {
 
+    
     const user_id: number = req.body.userId;
     const { path, data, details, location } = req.body.image;
 
     // Store image data in S3 Bucket
     const url: String | null = await uploadImageToS3(path, data);
+    console.log("URL: $url");
+    
     if (url != null) {
 
         try {
