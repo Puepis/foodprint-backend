@@ -11,7 +11,7 @@ let S3_BUCKET: string | undefined = process.env.S3_BUCKET_NAME;
 const s3 = new aws.S3(); // service object
 
 import dotenv from "dotenv";
-import { GetObjectRequest, PutObjectRequest } from 'aws-sdk/clients/s3';
+import { PutObjectRequest } from 'aws-sdk/clients/s3';
 dotenv.config();
 
 async function uploadImageToS3(path: string, imageData: any): Promise<String | null> {
@@ -23,7 +23,6 @@ async function uploadImageToS3(path: string, imageData: any): Promise<String | n
         };
 
         try {
-            console.log("Uploading image");
             const data = await s3.upload(uploadParams).promise(); // upload image
             console.log("Location: ${data.Location}");
             return data.Location;
@@ -32,26 +31,6 @@ async function uploadImageToS3(path: string, imageData: any): Promise<String | n
         }
     }
     return null;
-}
-
-async function getPhotoDataFromS3(path: string): Promise<String | null> {
-    if (typeof S3_BUCKET === "string") {
-        try {
-            const fetchParams: GetObjectRequest = {
-                Bucket: S3_BUCKET,
-                Key: path
-            };
-
-            const data = await s3.getObject(fetchParams).promise();
-            if (typeof data.Body !== "undefined") { // Image data retrieved
-                return data.Body.toString('binary');
-            }
-            return null;
-        } catch (e) {
-            console.log("Error retrieving file", e);
-        }
-    }
-    return null; // error
 }
 
 async function deletePhotoFromS3(path: string): Promise<boolean> {
@@ -117,8 +96,6 @@ export async function savePhoto(req: any, res: any): Promise<void> {
 
     // Store image data in S3 Bucket
     const url: String | null = await uploadImageToS3(path, data);
-    console.log("URL: $url");
-    
     if (url != null) {
 
         try {
