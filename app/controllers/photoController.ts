@@ -20,7 +20,7 @@ async function uploadImageToS3(path: string, imageData: Uint8Array): Promise<Str
         let uploadParams: PutObjectRequest = { // config
             Bucket: S3_BUCKET,
             Key: "cat.txt",
-            Body: imageData
+            Body: imageData.toString()
         };
 
         try {

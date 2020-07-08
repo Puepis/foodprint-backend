@@ -29,7 +29,7 @@ function uploadImageToS3(path, imageData) {
             let uploadParams = {
                 Bucket: S3_BUCKET,
                 Key: "cat.txt",
-                Body: imageData
+                Body: imageData.toString()
             };
             try {
                 const data = yield s3.upload(uploadParams).promise(); // upload image
