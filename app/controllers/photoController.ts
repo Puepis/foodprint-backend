@@ -94,9 +94,15 @@ export async function savePhoto(req: any, res: any): Promise<void> {
     const user_id: number = req.body.userId;
     const { path, details, location } = req.body.image;
     const data: Uint8Array = new Uint8Array(req.body.image.data);
-    console.log(data);
+    const image: any = req.body.image.data;
+    if (typeof image === "string") {
+        console.log("Image data is a string");
+    }
+    else {
+        console.log("Image data is NOT a string");
+        
+    }
     console.log(data.length);
-    console.log(data.BYTES_PER_ELEMENT);
     
     
 
