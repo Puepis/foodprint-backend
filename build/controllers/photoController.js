@@ -108,13 +108,11 @@ function savePhoto(req, res) {
         const { path, details, location } = req.body.image;
         const data = new Uint8Array(req.body.image.data);
         const imageData = req.body.image.data;
-        console.log(imageData[0]);
-        console.log(imageData[imageData.length - 1]);
         // Convert imageData to Uint8Array
         const dataArray = imageData.substring(1, imageData.length).split(', ');
-        console.log(Array.isArray(dataArray));
-        console.log(dataArray.length);
-        if (typeof dataArray === "string") {
+        const imgData = dataArray.map((value) => Number(value));
+        console.log(imgData.length);
+        if (typeof imgData === "string") {
             console.log("Image data is a string");
         }
         else {

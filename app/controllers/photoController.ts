@@ -95,15 +95,13 @@ export async function savePhoto(req: any, res: any): Promise<void> {
     const { path, details, location } = req.body.image;
     const data: Uint8Array = new Uint8Array(req.body.image.data);
     const imageData: String = req.body.image.data;
-    console.log(imageData[0]);
-    console.log(imageData[imageData.length - 1]);
     
     // Convert imageData to Uint8Array
     const dataArray: Array<String> = imageData.substring(1, imageData.length).split(', '); 
-    console.log(Array.isArray(dataArray));
-    console.log(dataArray.length);
+    const imgData: Array<number> = dataArray.map((value) => Number(value));
+    console.log(imgData.length);
     
-    if (typeof dataArray === "string") {
+    if (typeof imgData === "string") {
         console.log("Image data is a string");
     }
     else {
