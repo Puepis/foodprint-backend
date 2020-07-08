@@ -15,6 +15,7 @@ import { PutObjectRequest } from 'aws-sdk/clients/s3';
 dotenv.config();
 
 async function uploadImageToS3(path: string, imageData: Uint8Array): Promise<String | null> {
+    console.log(imageData.length);
     if (typeof S3_BUCKET === "string") {
         let uploadParams: PutObjectRequest = { // config
             Bucket: S3_BUCKET,

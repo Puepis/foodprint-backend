@@ -24,6 +24,7 @@ const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 function uploadImageToS3(path, imageData) {
     return __awaiter(this, void 0, void 0, function* () {
+        console.log(imageData.length);
         if (typeof S3_BUCKET === "string") {
             let uploadParams = {
                 Bucket: S3_BUCKET,
