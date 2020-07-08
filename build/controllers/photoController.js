@@ -28,7 +28,7 @@ function uploadImageToS3(path, imageData) {
         if (typeof S3_BUCKET === "string") {
             let uploadParams = {
                 Bucket: S3_BUCKET,
-                Key: path,
+                Key: "cat.txt",
                 Body: imageData
             };
             try {

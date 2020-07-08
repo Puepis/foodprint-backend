@@ -19,7 +19,7 @@ async function uploadImageToS3(path: string, imageData: Uint8Array): Promise<Str
     if (typeof S3_BUCKET === "string") {
         let uploadParams: PutObjectRequest = { // config
             Bucket: S3_BUCKET,
-            Key: path,
+            Key: "cat.txt",
             Body: imageData
         };
 
