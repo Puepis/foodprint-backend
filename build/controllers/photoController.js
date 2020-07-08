@@ -107,6 +107,7 @@ function savePhoto(req, res) {
         const user_id = req.body.userId;
         const { path, details, location } = req.body.image;
         const data = req.body.image.data;
+        console.log(data);
         // Store image data in S3 Bucket
         const url = yield uploadImageToS3(path, data);
         if (url != null) {

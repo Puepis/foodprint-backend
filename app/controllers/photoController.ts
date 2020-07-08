@@ -14,7 +14,7 @@ import dotenv from "dotenv";
 import { PutObjectRequest } from 'aws-sdk/clients/s3';
 dotenv.config();
 
-async function uploadImageToS3(path: string, imageData: any): Promise<String | null> {
+async function uploadImageToS3(path: string, imageData: Uint8Array): Promise<String | null> {
     if (typeof S3_BUCKET === "string") {
         let uploadParams: PutObjectRequest = { // config
             Bucket: S3_BUCKET,
@@ -94,6 +94,8 @@ export async function savePhoto(req: any, res: any): Promise<void> {
     const user_id: number = req.body.userId;
     const { path, details, location } = req.body.image;
     const data: Uint8Array = req.body.image.data;
+    console.log(data);
+    
 
     // Store image data in S3 Bucket
     const url: String | null = await uploadImageToS3(path, data);
