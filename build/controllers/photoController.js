@@ -107,14 +107,19 @@ function savePhoto(req, res) {
         const user_id = req.body.userId;
         const { path, details, location } = req.body.image;
         const data = new Uint8Array(req.body.image.data);
-        const image = req.body.image.data;
-        if (typeof image === "string") {
+        const imageData = req.body.image.data;
+        console.log(imageData[0]);
+        console.log(imageData[imageData.length - 1]);
+        // Convert imageData to Uint8Array
+        const dataArray = imageData.substring(1, imageData.length).split(', ');
+        console.log(Array.isArray(dataArray));
+        console.log(dataArray.length);
+        if (typeof dataArray === "string") {
             console.log("Image data is a string");
         }
         else {
             console.log("Image data is NOT a string");
         }
-        console.log(data.length);
         // Store image data in S3 Bucket
         const url = yield uploadImageToS3(path, data);
         if (url != null) {
