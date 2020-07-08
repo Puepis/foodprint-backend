@@ -15,18 +15,19 @@ import { PutObjectRequest } from 'aws-sdk/clients/s3';
 dotenv.config();
 
 async function uploadImageToS3(path: string, imageData: Uint8Array): Promise<String | null> {
-    console.log(imageData.length);
     if (typeof S3_BUCKET === "string") {
         let uploadParams: PutObjectRequest = { // config
             Bucket: S3_BUCKET,
-            Key: "cat.txt",
-            Body: imageData.toString()
+            Key: path,
+            Body: imageData,
+            Metadata: {'type': 'jpg'},
+            ACL: 'public-read'
         };
 
         try {
-            const data = await s3.upload(uploadParams).promise(); // upload image
-            console.log(data.Location);
-            return data.Location;
+            const res = await s3.putObject(uploadParams).promise(); // upload image
+            console.log(res.$response.data);
+            return null;
         } catch (e) {
             console.log("Error uploading the image", e);
         }

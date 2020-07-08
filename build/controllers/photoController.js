@@ -24,17 +24,18 @@ const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 function uploadImageToS3(path, imageData) {
     return __awaiter(this, void 0, void 0, function* () {
-        console.log(imageData.length);
         if (typeof S3_BUCKET === "string") {
             let uploadParams = {
                 Bucket: S3_BUCKET,
-                Key: "cat.txt",
-                Body: imageData.toString()
+                Key: path,
+                Body: imageData,
+                Metadata: { 'type': 'jpg' },
+                ACL: 'public-read'
             };
             try {
-                const data = yield s3.upload(uploadParams).promise(); // upload image
-                console.log(data.Location);
-                return data.Location;
+                const res = yield s3.putObject(uploadParams).promise(); // upload image
+                console.log(res.$response.data);
+                return null;
             }
             catch (e) {
                 console.log("Error uploading the image", e);
