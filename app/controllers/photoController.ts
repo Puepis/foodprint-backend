@@ -99,17 +99,12 @@ export async function savePhoto(req: any, res: any): Promise<void> {
     // Convert imageData to Uint8Array
     const dataArray: Array<String> = imageData.substring(1, imageData.length).split(', '); 
     const imgData: Array<number> = dataArray.map((value) => Number(value));
-    console.log(imgData.length);
+    const d: Uint8Array = new Uint8Array(imgData);
+    console.log(d.length);
+    console.log(d[0]);
+    console.log(d.BYTES_PER_ELEMENT);
     
-    if (typeof imgData === "string") {
-        console.log("Image data is a string");
-    }
-    else {
-        console.log("Image data is NOT a string");
-        
-    }
     
-
     // Store image data in S3 Bucket
     const url: String | null = await uploadImageToS3(path, data);
     if (url != null) {

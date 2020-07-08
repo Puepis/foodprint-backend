@@ -111,13 +111,10 @@ function savePhoto(req, res) {
         // Convert imageData to Uint8Array
         const dataArray = imageData.substring(1, imageData.length).split(', ');
         const imgData = dataArray.map((value) => Number(value));
-        console.log(imgData.length);
-        if (typeof imgData === "string") {
-            console.log("Image data is a string");
-        }
-        else {
-            console.log("Image data is NOT a string");
-        }
+        const d = new Uint8Array(imgData);
+        console.log(d.length);
+        console.log(d[0]);
+        console.log(d.BYTES_PER_ELEMENT);
         // Store image data in S3 Bucket
         const url = yield uploadImageToS3(path, data);
         if (url != null) {
