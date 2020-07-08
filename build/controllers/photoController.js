@@ -105,7 +105,8 @@ exports.retrieveFoodprint = retrieveFoodprint;
 function savePhoto(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         const user_id = req.body.userId;
-        const { path, data, details, location } = req.body.image;
+        const { path, details, location } = req.body.image;
+        const data = req.body.image.data;
         // Store image data in S3 Bucket
         const url = yield uploadImageToS3(path, data);
         if (url != null) {

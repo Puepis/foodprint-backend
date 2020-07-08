@@ -92,7 +92,8 @@ export async function savePhoto(req: any, res: any): Promise<void> {
 
     
     const user_id: number = req.body.userId;
-    const { path, data, details, location } = req.body.image;
+    const { path, details, location } = req.body.image;
+    const data: Uint8Array = req.body.image.data;
 
     // Store image data in S3 Bucket
     const url: String | null = await uploadImageToS3(path, data);
