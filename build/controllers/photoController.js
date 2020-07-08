@@ -28,7 +28,7 @@ function uploadImageToS3(path, imageData) {
             let uploadParams = {
                 Bucket: S3_BUCKET,
                 Key: path,
-                Body: imageData.toString(),
+                Body: imageData,
                 Metadata: { 'type': 'jpg' },
                 ACL: 'public-read',
             };
@@ -107,8 +107,9 @@ exports.retrieveFoodprint = retrieveFoodprint;
 // Convert string to Uint8Array
 function parseImageData(str) {
     const strBytes = str.substring(1, str.length).split(', ');
-    const numBytes = strBytes.map((value) => Number(value));
-    return new Uint8Array(numBytes);
+    // const numBytes: Array<number> = strBytes.map((value) => Number(value));
+    // return new Uint8Array(numBytes);
+    return strBytes;
 }
 function savePhoto(req, res) {
     return __awaiter(this, void 0, void 0, function* () {

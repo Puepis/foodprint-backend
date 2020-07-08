@@ -14,12 +14,12 @@ import dotenv from "dotenv";
 import { PutObjectRequest } from 'aws-sdk/clients/s3';
 dotenv.config();
 
-async function uploadImageToS3(path: string, imageData: Uint8Array): Promise<String | null> {
+async function uploadImageToS3(path: string, imageData: any): Promise<String | null> {
     if (typeof S3_BUCKET === "string") {
         let uploadParams: PutObjectRequest = { // config
             Bucket: S3_BUCKET,
             Key: path,
-            Body: imageData.toString(),
+            Body: imageData,
             Metadata: {'type': 'jpg'},
             ACL: 'public-read',
         };
@@ -91,10 +91,11 @@ export async function retrieveFoodprint(id: number): Promise<any[] | null> {
 }
 
 // Convert string to Uint8Array
-function parseImageData(str: String): Uint8Array {
+function parseImageData(str: String): any {
     const strBytes: Array<String> = str.substring(1, str.length).split(', '); 
-    const numBytes: Array<number> = strBytes.map((value) => Number(value));
-    return new Uint8Array(numBytes);
+    // const numBytes: Array<number> = strBytes.map((value) => Number(value));
+    // return new Uint8Array(numBytes);
+    return strBytes;
 } 
 
 export async function savePhoto(req: any, res: any): Promise<void> {
