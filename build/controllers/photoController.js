@@ -28,13 +28,13 @@ function uploadImageToS3(path, imageData) {
             let uploadParams = {
                 Bucket: S3_BUCKET,
                 Key: path,
-                Body: imageData,
+                Body: imageData.toString(),
                 Metadata: { 'type': 'jpg' },
-                ACL: 'public-read'
+                ACL: 'public-read',
             };
             try {
-                const res = yield s3.putObject(uploadParams).promise(); // upload image
-                console.log(res.$response.data);
+                const res = yield s3.upload(uploadParams).promise(); // upload image
+                console.log(res.Location);
                 return null;
             }
             catch (e) {

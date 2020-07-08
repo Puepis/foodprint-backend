@@ -19,14 +19,14 @@ async function uploadImageToS3(path: string, imageData: Uint8Array): Promise<Str
         let uploadParams: PutObjectRequest = { // config
             Bucket: S3_BUCKET,
             Key: path,
-            Body: imageData,
+            Body: imageData.toString(),
             Metadata: {'type': 'jpg'},
-            ACL: 'public-read'
+            ACL: 'public-read',
         };
 
         try {
-            const res = await s3.putObject(uploadParams).promise(); // upload image
-            console.log(res.$response.data);
+            const res = await s3.upload(uploadParams).promise(); // upload image
+            console.log(res.Location);
             return null;
         } catch (e) {
             console.log("Error uploading the image", e);
