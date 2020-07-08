@@ -19,7 +19,7 @@ async function uploadImageToS3(path: string, imageData: any): Promise<String | n
         let uploadParams: PutObjectRequest = { // config
             Bucket: S3_BUCKET,
             Key: path,
-            Body: imageData,
+            Body: imageData.toString(),
             Metadata: {'type': 'jpg'},
             ACL: 'public-read',
         };
