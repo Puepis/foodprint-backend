@@ -28,7 +28,7 @@ function uploadImageToS3(path, imageData) {
             let uploadParams = {
                 Bucket: S3_BUCKET,
                 Key: path,
-                Body: imageData.toString(),
+                Body: Buffer.from(imageData),
                 Metadata: { 'type': 'jpg' },
                 ACL: 'public-read',
             };
