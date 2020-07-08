@@ -88,22 +88,19 @@ export async function retrieveFoodprint(id: number): Promise<any[] | null> {
     }
 }
 
+// Convert string to Uint8Array
+function parseImageData(str: String): Uint8Array {
+    const strBytes: Array<String> = str.substring(1, str.length).split(', '); 
+    const numBytes: Array<number> = strBytes.map((value) => Number(value));
+    return new Uint8Array(numBytes);
+} 
+
 export async function savePhoto(req: any, res: any): Promise<void> {
 
     
     const user_id: number = req.body.userId;
     const { path, details, location } = req.body.image;
-    const data: Uint8Array = new Uint8Array(req.body.image.data);
-    const imageData: String = req.body.image.data;
-    
-    // Convert imageData to Uint8Array
-    const dataArray: Array<String> = imageData.substring(1, imageData.length).split(', '); 
-    const imgData: Array<number> = dataArray.map((value) => Number(value));
-    const d: Uint8Array = new Uint8Array(imgData);
-    console.log(d.length);
-    console.log(d[0]);
-    console.log(d.BYTES_PER_ELEMENT);
-    
+    const data: Uint8Array = parseImageData(req.body.image.data);
     
     // Store image data in S3 Bucket
     const url: String | null = await uploadImageToS3(path, data);

@@ -102,19 +102,17 @@ function retrieveFoodprint(id) {
     });
 }
 exports.retrieveFoodprint = retrieveFoodprint;
+// Convert string to Uint8Array
+function parseImageData(str) {
+    const strBytes = str.substring(1, str.length).split(', ');
+    const numBytes = strBytes.map((value) => Number(value));
+    return new Uint8Array(numBytes);
+}
 function savePhoto(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         const user_id = req.body.userId;
         const { path, details, location } = req.body.image;
-        const data = new Uint8Array(req.body.image.data);
-        const imageData = req.body.image.data;
-        // Convert imageData to Uint8Array
-        const dataArray = imageData.substring(1, imageData.length).split(', ');
-        const imgData = dataArray.map((value) => Number(value));
-        const d = new Uint8Array(imgData);
-        console.log(d.length);
-        console.log(d[0]);
-        console.log(d.BYTES_PER_ELEMENT);
+        const data = parseImageData(req.body.image.data);
         // Store image data in S3 Bucket
         const url = yield uploadImageToS3(path, data);
         if (url != null) {
