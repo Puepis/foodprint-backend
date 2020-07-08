@@ -35,7 +35,7 @@ function uploadImageToS3(path, imageData) {
             try {
                 const res = yield s3.upload(uploadParams).promise(); // upload image
                 console.log(res.Location);
-                return null;
+                return res.Location;
             }
             catch (e) {
                 console.log("Error uploading the image", e);
@@ -107,9 +107,8 @@ exports.retrieveFoodprint = retrieveFoodprint;
 // Convert string to Uint8Array
 function parseImageData(str) {
     const strBytes = str.substring(1, str.length).split(', ');
-    // const numBytes: Array<number> = strBytes.map((value) => Number(value));
-    // return new Uint8Array(numBytes);
-    return strBytes;
+    const numBytes = strBytes.map((value) => Number(value));
+    return new Uint8Array(numBytes);
 }
 function savePhoto(req, res) {
     return __awaiter(this, void 0, void 0, function* () {

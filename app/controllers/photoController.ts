@@ -27,7 +27,7 @@ async function uploadImageToS3(path: string, imageData: any): Promise<String | n
         try {
             const res = await s3.upload(uploadParams).promise(); // upload image
             console.log(res.Location);
-            return null;
+            return res.Location;
         } catch (e) {
             console.log("Error uploading the image", e);
         }
@@ -93,9 +93,8 @@ export async function retrieveFoodprint(id: number): Promise<any[] | null> {
 // Convert string to Uint8Array
 function parseImageData(str: String): any {
     const strBytes: Array<String> = str.substring(1, str.length).split(', '); 
-    // const numBytes: Array<number> = strBytes.map((value) => Number(value));
-    // return new Uint8Array(numBytes);
-    return strBytes;
+    const numBytes: Array<number> = strBytes.map((value) => Number(value));
+    return new Uint8Array(numBytes);
 } 
 
 export async function savePhoto(req: any, res: any): Promise<void> {
