@@ -94,7 +94,10 @@ export async function savePhoto(req: any, res: any): Promise<void> {
     const user_id: number = req.body.userId;
     const { path, details, location } = req.body.image;
     const data: Uint8Array = new Uint8Array(req.body.image.data);
+    console.log(data);
     console.log(data.length);
+    console.log(data.BYTES_PER_ELEMENT);
+    
     
 
     // Store image data in S3 Bucket
