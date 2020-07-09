@@ -26,7 +26,6 @@ async function uploadImageToS3(path: string, imageData: any): Promise<String | n
 
         try {
             const res = await s3.upload(uploadParams).promise(); // upload image
-            console.log(res.Location);
             return res.Location;
         } catch (e) {
             console.log("Error uploading the image", e);

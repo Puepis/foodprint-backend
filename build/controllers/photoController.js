@@ -34,7 +34,6 @@ function uploadImageToS3(path, imageData) {
             };
             try {
                 const res = yield s3.upload(uploadParams).promise(); // upload image
-                console.log(res.Location);
                 return res.Location;
             }
             catch (e) {
