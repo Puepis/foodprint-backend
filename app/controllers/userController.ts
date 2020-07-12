@@ -14,10 +14,10 @@ dotenv.config();
 
 export async function registerUser(req: any, res: any): Promise<void> {
 
-    const { email, username, password } = req.body;
+    const { username, password } = req.body;
 
     try {
-        const existing_users: any = await connection.query("SELECT id FROM users WHERE email = $1 OR username = $2", [email, username]);
+        const existing_users: any = await connection.query("SELECT id FROM users WHERE username = $1", [username]);
 
         if (existing_users.rows.length > 0) {
             res.sendStatus(409);
@@ -27,8 +27,8 @@ export async function registerUser(req: any, res: any): Promise<void> {
             const salt: any = await bcrypt.genSalt(10);
             const hash: any = await bcrypt.hash(password, salt);
 
-            await connection.query("INSERT INTO users (email, username, password) \
-            VALUES ($1, $2, $3)", [email, username, hash]);
+            await connection.query("INSERT INTO users (username, password) \
+            VALUES ($1, $2)", [username, hash]);
 
             res.sendStatus(200);
         }

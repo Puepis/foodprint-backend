@@ -25,9 +25,9 @@ const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 function registerUser(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
-        const { email, username, password } = req.body;
+        const { username, password } = req.body;
         try {
-            const existing_users = yield connection.query("SELECT id FROM users WHERE email = $1 OR username = $2", [email, username]);
+            const existing_users = yield connection.query("SELECT id FROM users WHERE username = $1", [username]);
             if (existing_users.rows.length > 0) {
                 res.sendStatus(409);
             }
@@ -35,8 +35,8 @@ function registerUser(req, res) {
                 // Hash Password
                 const salt = yield bcrypt_1.default.genSalt(10);
                 const hash = yield bcrypt_1.default.hash(password, salt);
-                yield connection.query("INSERT INTO users (email, username, password) \
-            VALUES ($1, $2, $3)", [email, username, hash]);
+                yield connection.query("INSERT INTO users (username, password) \
+            VALUES ($1, $2)", [username, hash]);
                 res.sendStatus(200);
             }
         }
