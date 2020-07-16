@@ -76,11 +76,15 @@ export async function retrieveFoodprint(id: number): Promise<any[] | null> {
     const photoQuery = "SELECT path, url, photo_name, price, comments, time_taken FROM photos \
         WHERE restaurant_id = $1 AND user_id = $2";
 
+    const typesQuery = "SELECT type FROM restaurant_types WHERE restaurant_id = $1";
+
     try {
         const restaurants: any[] = (await connection.query(restaurantQuery, [id])).rows;
         for (let r of restaurants) {
             let photos: any[] = (await connection.query(photoQuery, [r.restaurant_id, id])).rows;
+            let types: any[] = (await connection.query(typesQuery, [r.restaurant_id])).rows;
             r.photos = photos;
+            r.restaurant_types = types;
         }
         return restaurants;
     } catch (e) {
@@ -115,6 +119,12 @@ export async function savePhoto(req: any, res: any): Promise<void> {
                 await connection.query("INSERT INTO restaurants (id, name, rating, lat, lng) \
                     VALUES ($1, $2, $3, $4, $5)", [location.id, location.name, location.rating, location.lat,
                 location.lng]);
+
+                const types: any[] = location.types;
+                for (var type of types) {
+                    await connection.query("INSERT INTO restaurant_types (restaurant_id, type) \
+                    VALUES ($1, $2)", [location.id, type]);
+                }
             }
 
             // 2. Store image details in pgsql table
