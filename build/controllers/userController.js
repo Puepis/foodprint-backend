@@ -15,7 +15,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.logout = exports.verifyToken = exports.getFoodprint = exports.getPhotos = exports.loginUser = exports.registerUser = void 0;
+exports.verifyToken = exports.getFoodprint = exports.getPhotos = exports.loginUser = exports.registerUser = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const jwt_decode_1 = __importDefault(require("jwt-decode"));
 const connection = require("../config/dbConnection");
@@ -67,17 +67,7 @@ function loginUser(req, res) {
                     if (typeof key === "string") {
                         // Construct JWT
                         const token = jsonwebtoken_1.default.sign(payload, key, { algorithm: 'HS256', expiresIn: "10 minutes" });
-                        // Store time created into user table
-                        const decodedToken = jwt_decode_1.default(token);
-                        if (decodedToken !== "undefined") {
-                            const timeCreated = decodedToken.iat;
-                            yield connection.query("UPDATE users SET last_login = $1 WHERE username = $2", [timeCreated, payload.username]);
-                            res.status(200).send(token);
-                        }
-                        else {
-                            console.log("Bad token");
-                            res.sendStatus(500);
-                        }
+                        res.status(200).send(token);
                     }
                     else {
                         console.log("No signing key config var found");
@@ -148,17 +138,8 @@ function verifyToken(req, res, next) {
                     res.sendStatus(403); // unauthorized token
                 }
                 if (typeof payload !== "undefined") { // check for deprecated token 
-                    const result = yield connection.query("SELECT last_login FROM users WHERE username = $1", [payload.username]);
-                    const last_login = result.rows[0].last_login;
-                    const timeIssued = payload.iat;
-                    // Invalid token 
-                    if (timeIssued < last_login) {
-                        res.status(403).send("ERROR: Bad token");
-                    }
-                    else {
-                        req.token = token;
-                        next(); // authorized
-                    }
+                    req.token = token;
+                    next();
                 }
             }));
         }
@@ -171,23 +152,3 @@ function verifyToken(req, res, next) {
     }
 }
 exports.verifyToken = verifyToken;
-/*
- * This function handles the logout logic for the application.
- */
-function logout(req, res) {
-    return __awaiter(this, void 0, void 0, function* () {
-        try {
-            // Update user's token creation time
-            const username = req.body.username;
-            // Get current time (seconds since epoch)
-            const now = Math.round(Date.now() / 1000);
-            yield connection.query('UPDATE users SET last_login = $1 WHERE username = $2', [now, username]);
-            res.sendStatus(200);
-        }
-        catch (e) {
-            console.log(e);
-            res.status(401).send(e);
-        }
-    });
-}
-exports.logout = logout;

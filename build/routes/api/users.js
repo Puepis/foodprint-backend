@@ -11,7 +11,6 @@ const router = express_1.default.Router();
 const controller = require("../../controllers/userController");
 router.post('/register', controller.registerUser);
 router.post('/login', controller.loginUser);
-router.post('/logout', controller.logout);
 router.get('/photos', controller.verifyToken, controller.getPhotos);
 router.get('/foodprint', controller.verifyToken, controller.getFoodprint);
 module.exports = router;

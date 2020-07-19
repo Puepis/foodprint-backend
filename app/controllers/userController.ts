@@ -62,19 +62,7 @@ export async function loginUser(req: any, res: any): Promise<void> {
 
                     // Construct JWT
                     const token: string = jwt.sign(payload, key, { algorithm: 'HS256', expiresIn: "10 minutes" });
-
-                    // Store time created into user table
-                    const decodedToken: any = jwtDecode(token);
-                    if (decodedToken !== "undefined") {
-                        const timeCreated: number = decodedToken.iat;
-                        await connection.query("UPDATE users SET last_login = $1 WHERE username = $2", [timeCreated, payload.username]);
-                        res.status(200).send(token);
-                    }
-                    else {
-                        console.log("Bad token");
-
-                        res.sendStatus(500);
-                    }
+                    res.status(200).send(token);
                 }
                 else {
                     console.log("No signing key config var found");
@@ -146,18 +134,8 @@ export function verifyToken(req: any, res: any, next: any): void {
 
                 }
                 if (typeof payload !== "undefined") { // check for deprecated token 
-
-                    const result: any = await connection.query("SELECT last_login FROM users WHERE username = $1", [payload.username]);
-                    const last_login: number = result.rows[0].last_login;
-                    const timeIssued: number = payload.iat;
-
-                    // Invalid token 
-                    if (timeIssued < last_login) {
-                        res.status(403).send("ERROR: Bad token");
-                    } else {
-                        req.token = token;
-                        next(); // authorized
-                    }
+                    req.token = token;
+                    next();
                 }
             });
         }
@@ -170,22 +148,3 @@ export function verifyToken(req: any, res: any, next: any): void {
     }
 }
 
-
-/*
- * This function handles the logout logic for the application.
- */
-export async function logout(req: any, res: any): Promise<void> {
-
-    try {
-        // Update user's token creation time
-        const username: string = req.body.username;
-
-        // Get current time (seconds since epoch)
-        const now: number = Math.round(Date.now() / 1000);
-        await connection.query('UPDATE users SET last_login = $1 WHERE username = $2', [now, username]);
-        res.sendStatus(200);
-    } catch (e) {
-        console.log(e);
-        res.status(401).send(e);
-    }
-}
