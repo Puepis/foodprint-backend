@@ -153,7 +153,7 @@ export async function deletePhoto(req: any, res: any): Promise<void> {
 export async function editPhoto(req: any, res: any): Promise<void> {
     const { path, photo_name, price, comments, favourite } = req.body;
     try {
-        await connection.query("UPDATE photos SET photo_name = $1, price = $2, comments = $3 favourite = $4 WHERE path = $5",
+        await connection.query("UPDATE photos SET photo_name = $1, price = $2, comments = $3, favourite = $4 WHERE path = $5",
             [photo_name, price, comments, favourite, path]);
         res.sendStatus(200);
     } catch (e) {

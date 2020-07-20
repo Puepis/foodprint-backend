@@ -162,7 +162,7 @@ function editPhoto(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         const { path, photo_name, price, comments, favourite } = req.body;
         try {
-            yield connection.query("UPDATE photos SET photo_name = $1, price = $2, comments = $3 favourite = $4 WHERE path = $5", [photo_name, price, comments, favourite, path]);
+            yield connection.query("UPDATE photos SET photo_name = $1, price = $2, comments = $3, favourite = $4 WHERE path = $5", [photo_name, price, comments, favourite, path]);
             res.sendStatus(200);
         }
         catch (e) {
