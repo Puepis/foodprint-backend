@@ -83,23 +83,6 @@ export async function loginUser(req: any, res: any): Promise<void> {
     }
 };
 
-export async function getPhotos(req: any, res: any): Promise<void> {
-
-    const token: string = req.token;
-    const decoded: any = jwtDecode(token);
-    const id: number = decoded.sub;
-
-    // Token verified
-    const photos: any[] | null = await photoController.retrievePhotos(id);
-
-    // Could not retrieve photos
-    if (photos == null) {
-        res.sendStatus(400);
-    } else {
-        res.status(200).json({ photos: photos });
-    }
-};
-
 export async function getFoodprint(req: any, res: any): Promise<void> {
     const token: string = req.token;
     const decoded: any = jwtDecode(token);

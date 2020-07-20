@@ -15,7 +15,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.verifyToken = exports.getFoodprint = exports.getPhotos = exports.loginUser = exports.registerUser = void 0;
+exports.verifyToken = exports.getFoodprint = exports.loginUser = exports.registerUser = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const jwt_decode_1 = __importDefault(require("jwt-decode"));
 const connection = require("../config/dbConnection");
@@ -89,24 +89,6 @@ function loginUser(req, res) {
     });
 }
 exports.loginUser = loginUser;
-;
-function getPhotos(req, res) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const token = req.token;
-        const decoded = jwt_decode_1.default(token);
-        const id = decoded.sub;
-        // Token verified
-        const photos = yield photoController.retrievePhotos(id);
-        // Could not retrieve photos
-        if (photos == null) {
-            res.sendStatus(400);
-        }
-        else {
-            res.status(200).json({ photos: photos });
-        }
-    });
-}
-exports.getPhotos = getPhotos;
 ;
 function getFoodprint(req, res) {
     return __awaiter(this, void 0, void 0, function* () {

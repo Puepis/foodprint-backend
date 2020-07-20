@@ -50,22 +50,6 @@ async function deletePhotoFromS3(path: string): Promise<boolean> {
     return false;
 }
 
-// Get a list of all user photos, sorted by restaurant
-export async function retrievePhotos(id: number): Promise<any[] | null> {
-    const photoQuery = "SELECT r.id restaurant_id, r.name restaurant_name, r.rating restaurant_rating, r.lat restaurant_lat, \
-        r.lng restaurant_lng, p.path, p.url, p.photo_name, p.price, p.comments, p.time_taken FROM restaurants r INNER JOIN \
-        photos p ON r.id = p.restaurant_id WHERE p.user_id = $1 ORDER BY r.name";
-
-    try {
-        const result = await connection.query(photoQuery, [id]);
-        const rows: any[] = result.rows;
-        return rows;
-    } catch (e) {
-        console.log(e);
-        return null;
-    }
-}
-
 // Sort photos by restaurant 
 export async function retrieveFoodprint(id: number): Promise<any[] | null> {
     const restaurantQuery = "SELECT id restaurant_id, name restaurant_name, rating restaurant_rating, \
@@ -73,7 +57,7 @@ export async function retrieveFoodprint(id: number): Promise<any[] | null> {
         SELECT DISTINCT restaurant_id FROM photos WHERE user_id = $1 \
         ) ORDER BY r.name";
 
-    const photoQuery = "SELECT path, url, photo_name, price, comments, time_taken FROM photos \
+    const photoQuery = "SELECT path, url, photo_name, price, comments, time_taken, favourite FROM photos \
         WHERE restaurant_id = $1 AND user_id = $2";
 
     const typesQuery = "SELECT type FROM restaurant_types WHERE restaurant_id = $1";
@@ -100,11 +84,12 @@ function parseImageData(str: String): any {
     return new Uint8Array(numBytes);
 } 
 
+/// Responsible for saving the photo to db
 export async function savePhoto(req: any, res: any): Promise<void> {
 
     
     const user_id: number = req.body.userId;
-    const { path, details, location } = req.body.image;
+    const { path, favourite, details, location } = req.body.image;
     const data: Uint8Array = parseImageData(req.body.image.data);
     
     // Store image data in S3 Bucket
@@ -128,9 +113,9 @@ export async function savePhoto(req: any, res: any): Promise<void> {
             }
 
             // 2. Store image details in pgsql table
-            await connection.query("INSERT INTO photos (path, url, user_id, photo_name, price, comments, restaurant_id, time_taken) \
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", [path, url, user_id, details.name, details.price, details.comments,
-                location.id, details.timestamp]);
+            await connection.query("INSERT INTO photos (path, url, user_id, photo_name, price, comments, restaurant_id, time_taken, favourite) \
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)", [path, url, user_id, details.name, details.price, details.comments,
+                location.id, details.timestamp, favourite]);
 
         } catch (e) {
             console.log(e);
@@ -166,10 +151,10 @@ export async function deletePhoto(req: any, res: any): Promise<void> {
 };
 
 export async function editPhoto(req: any, res: any): Promise<void> {
-    const { path, photo_name, price, comments } = req.body;
+    const { path, photo_name, price, comments, favourite } = req.body;
     try {
-        await connection.query("UPDATE photos SET photo_name = $1, price = $2, comments = $3 WHERE path = $4",
-            [photo_name, price, comments, path]);
+        await connection.query("UPDATE photos SET photo_name = $1, price = $2, comments = $3 favourite = $4 WHERE path = $5",
+            [photo_name, price, comments, favourite, path]);
         res.sendStatus(200);
     } catch (e) {
         console.log(e);

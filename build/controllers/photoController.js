@@ -15,7 +15,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.editPhoto = exports.deletePhoto = exports.savePhoto = exports.retrieveFoodprint = exports.retrievePhotos = void 0;
+exports.editPhoto = exports.deletePhoto = exports.savePhoto = exports.retrieveFoodprint = void 0;
 const connection = require("../config/dbConnection");
 const aws = require("../config/aws");
 let S3_BUCKET = process.env.S3_BUCKET_NAME;
@@ -61,24 +61,6 @@ function deletePhotoFromS3(path) {
         return false;
     });
 }
-// Get a list of all user photos, sorted by restaurant
-function retrievePhotos(id) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const photoQuery = "SELECT r.id restaurant_id, r.name restaurant_name, r.rating restaurant_rating, r.lat restaurant_lat, \
-        r.lng restaurant_lng, p.path, p.url, p.photo_name, p.price, p.comments, p.time_taken FROM restaurants r INNER JOIN \
-        photos p ON r.id = p.restaurant_id WHERE p.user_id = $1 ORDER BY r.name";
-        try {
-            const result = yield connection.query(photoQuery, [id]);
-            const rows = result.rows;
-            return rows;
-        }
-        catch (e) {
-            console.log(e);
-            return null;
-        }
-    });
-}
-exports.retrievePhotos = retrievePhotos;
 // Sort photos by restaurant 
 function retrieveFoodprint(id) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -86,7 +68,7 @@ function retrieveFoodprint(id) {
         lat restaurant_lat, lng restaurant_lng FROM restaurants r WHERE id IN ( \
         SELECT DISTINCT restaurant_id FROM photos WHERE user_id = $1 \
         ) ORDER BY r.name";
-        const photoQuery = "SELECT path, url, photo_name, price, comments, time_taken FROM photos \
+        const photoQuery = "SELECT path, url, photo_name, price, comments, time_taken, favourite FROM photos \
         WHERE restaurant_id = $1 AND user_id = $2";
         const typesQuery = "SELECT type FROM restaurant_types WHERE restaurant_id = $1";
         try {
@@ -112,10 +94,11 @@ function parseImageData(str) {
     const numBytes = strBytes.map((value) => Number(value));
     return new Uint8Array(numBytes);
 }
+/// Responsible for saving the photo to db
 function savePhoto(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         const user_id = req.body.userId;
-        const { path, details, location } = req.body.image;
+        const { path, favourite, details, location } = req.body.image;
         const data = parseImageData(req.body.image.data);
         // Store image data in S3 Bucket
         const url = yield uploadImageToS3(path, data);
@@ -134,9 +117,9 @@ function savePhoto(req, res) {
                     }
                 }
                 // 2. Store image details in pgsql table
-                yield connection.query("INSERT INTO photos (path, url, user_id, photo_name, price, comments, restaurant_id, time_taken) \
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", [path, url, user_id, details.name, details.price, details.comments,
-                    location.id, details.timestamp]);
+                yield connection.query("INSERT INTO photos (path, url, user_id, photo_name, price, comments, restaurant_id, time_taken, favourite) \
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)", [path, url, user_id, details.name, details.price, details.comments,
+                    location.id, details.timestamp, favourite]);
             }
             catch (e) {
                 console.log(e);
@@ -177,9 +160,9 @@ exports.deletePhoto = deletePhoto;
 ;
 function editPhoto(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
-        const { path, photo_name, price, comments } = req.body;
+        const { path, photo_name, price, comments, favourite } = req.body;
         try {
-            yield connection.query("UPDATE photos SET photo_name = $1, price = $2, comments = $3 WHERE path = $4", [photo_name, price, comments, path]);
+            yield connection.query("UPDATE photos SET photo_name = $1, price = $2, comments = $3 favourite = $4 WHERE path = $5", [photo_name, price, comments, favourite, path]);
             res.sendStatus(200);
         }
         catch (e) {
