@@ -9,9 +9,11 @@ import connection = require('../config/dbConnection');
 import bcrypt from 'bcrypt';
 import photoController = require('./photoController');
 
+/// Env variables
 import dotenv from "dotenv";
 dotenv.config();
 
+/// Logic for registering a user 
 export async function registerUser(req: any, res: any): Promise<void> {
 
     const { username, password } = req.body;
@@ -38,8 +40,7 @@ export async function registerUser(req: any, res: any): Promise<void> {
     }
 };
 
-
-
+/// Logic for logging in
 export async function loginUser(req: any, res: any): Promise<void> {
     const { username, password } = req.body;
 
@@ -83,6 +84,7 @@ export async function loginUser(req: any, res: any): Promise<void> {
     }
 };
 
+/// Retrieve the user's foodprint
 export async function getFoodprint(req: any, res: any): Promise<void> {
     const token: string = req.token;
     const decoded: any = jwtDecode(token);
@@ -131,3 +133,54 @@ export function verifyToken(req: any, res: any, next: any): void {
     }
 }
 
+/// Logic for updating the user's username
+export async function updateUsername(req: any, res: any): Promise<void> {
+    const { id, new_username } = req.body;
+
+    try {
+        await connection.query("UPDATE users SET username = $1 WHERE id = $2", [new_username, id]);
+        res.sendStatus(200);
+
+    } catch (e) {
+        console.log(e);
+        res.status(401).send(e);
+    }
+};
+
+/// Logic for updating the user's password
+export async function updatePassword(req: any, res: any): Promise<void> {
+    const { id, new_password } = req.body;
+
+    try {
+        // Hash Password
+        const salt: any = await bcrypt.genSalt(10);
+        const hash: any = await bcrypt.hash(new_password, salt);
+        await connection.query("UPDATE users SET password = $1 WHERE id = $2", [hash, id]);
+        res.sendStatus(200);
+
+    } catch (e) {
+        console.log(e);
+        res.status(401).send(e);
+    }
+};
+
+export async function deleteUser(req: any, res: any): Promise<void> {
+    const {id} = req.body;
+
+    try {
+        // Remove all of the user's photos
+        await photoController.emptyS3Directory(id + '/');
+        await connection.query("DELETE FROM photos WHERE user_id = $1", [id]);
+
+        // Delete user from db 
+        await connection.query("DELETE FROM users WHERE id = $1", [id]);
+        
+        res.sendStatus(200);
+
+    } catch (e) {
+        console.log(e);
+        res.status(401).send(e);
+    }
+};
+
+// TODO: Implement changeAvatar function

@@ -15,7 +15,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.editPhoto = exports.deletePhoto = exports.savePhoto = exports.retrieveFoodprint = void 0;
+exports.editPhoto = exports.deletePhoto = exports.savePhoto = exports.retrieveFoodprint = exports.emptyS3Directory = void 0;
 const connection = require("../config/dbConnection");
 const aws = require("../config/aws");
 let S3_BUCKET = process.env.S3_BUCKET_NAME;
@@ -61,6 +61,36 @@ function deletePhotoFromS3(path) {
         return false;
     });
 }
+function emptyS3Directory(dir) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (typeof S3_BUCKET === "string") {
+            const listParams = {
+                Bucket: S3_BUCKET,
+                Prefix: dir
+            };
+            // Get all objects from directory 
+            const listedObjects = yield s3.listObjectsV2(listParams).promise();
+            if (listedObjects.Contents.length === 0)
+                return;
+            var deleteObjects = [];
+            const deleteParams = {
+                Bucket: S3_BUCKET,
+                Delete: { Objects: deleteObjects }
+            };
+            // Add all objects to the delete array
+            listedObjects.Contents.forEach(({ Key }) => {
+                deleteParams.Delete.Objects.push({ Key });
+            });
+            // Delete objects
+            yield s3.deleteObjects(deleteParams).promise();
+            // Continue deleting objects if there are more left
+            if (listedObjects.IsTruncated)
+                yield emptyS3Directory(dir);
+        }
+    });
+}
+exports.emptyS3Directory = emptyS3Directory;
+;
 // Sort photos by restaurant 
 function retrieveFoodprint(id) {
     return __awaiter(this, void 0, void 0, function* () {

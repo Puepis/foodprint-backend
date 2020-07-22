@@ -50,6 +50,37 @@ async function deletePhotoFromS3(path: string): Promise<boolean> {
     return false;
 }
 
+export async function emptyS3Directory(dir: string): Promise<void> {
+    if (typeof S3_BUCKET === "string") {
+        const listParams = {
+            Bucket: S3_BUCKET,
+            Prefix: dir
+        };
+    
+        // Get all objects from directory 
+        const listedObjects: any = await s3.listObjectsV2(listParams).promise();
+    
+        if (listedObjects.Contents.length === 0) return;
+    
+        var deleteObjects: any[] = [];
+        const deleteParams = {
+            Bucket: S3_BUCKET,
+            Delete: { Objects: deleteObjects }
+        };
+    
+        // Add all objects to the delete array
+        listedObjects.Contents.forEach(({Key}: any ) => {
+            deleteParams.Delete.Objects.push({ Key });
+        });
+    
+        // Delete objects
+        await s3.deleteObjects(deleteParams).promise();
+        
+        // Continue deleting objects if there are more left
+        if (listedObjects.IsTruncated) await emptyS3Directory(dir);
+    }
+};
+
 // Sort photos by restaurant 
 export async function retrieveFoodprint(id: number): Promise<any[] | null> {
     const restaurantQuery = "SELECT id restaurant_id, name restaurant_name, rating restaurant_rating, \
@@ -161,3 +192,4 @@ export async function editPhoto(req: any, res: any): Promise<void> {
         res.sendStatus(401);
     }
 };
+

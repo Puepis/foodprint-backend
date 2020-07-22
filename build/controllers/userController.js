@@ -15,14 +15,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.verifyToken = exports.getFoodprint = exports.loginUser = exports.registerUser = void 0;
+exports.deleteUser = exports.updatePassword = exports.updateUsername = exports.verifyToken = exports.getFoodprint = exports.loginUser = exports.registerUser = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const jwt_decode_1 = __importDefault(require("jwt-decode"));
 const connection = require("../config/dbConnection");
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const photoController = require("./photoController");
+/// Env variables
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
+/// Logic for registering a user 
 function registerUser(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         const { username, password } = req.body;
@@ -48,6 +50,7 @@ function registerUser(req, res) {
 }
 exports.registerUser = registerUser;
 ;
+/// Logic for logging in
 function loginUser(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         const { username, password } = req.body;
@@ -90,6 +93,7 @@ function loginUser(req, res) {
 }
 exports.loginUser = loginUser;
 ;
+/// Retrieve the user's foodprint
 function getFoodprint(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         const token = req.token;
@@ -134,3 +138,58 @@ function verifyToken(req, res, next) {
     }
 }
 exports.verifyToken = verifyToken;
+/// Logic for updating the user's username
+function updateUsername(req, res) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const { id, new_username } = req.body;
+        try {
+            yield connection.query("UPDATE users SET username = $1 WHERE id = $2", [new_username, id]);
+            res.sendStatus(200);
+        }
+        catch (e) {
+            console.log(e);
+            res.status(401).send(e);
+        }
+    });
+}
+exports.updateUsername = updateUsername;
+;
+/// Logic for updating the user's password
+function updatePassword(req, res) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const { id, new_password } = req.body;
+        try {
+            // Hash Password
+            const salt = yield bcrypt_1.default.genSalt(10);
+            const hash = yield bcrypt_1.default.hash(new_password, salt);
+            yield connection.query("UPDATE users SET password = $1 WHERE id = $2", [hash, id]);
+            res.sendStatus(200);
+        }
+        catch (e) {
+            console.log(e);
+            res.status(401).send(e);
+        }
+    });
+}
+exports.updatePassword = updatePassword;
+;
+function deleteUser(req, res) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const { id } = req.body;
+        try {
+            // Remove all of the user's photos
+            yield photoController.emptyS3Directory(id + '/');
+            yield connection.query("DELETE FROM photos WHERE user_id = $1", [id]);
+            // Delete user from db 
+            yield connection.query("DELETE FROM users WHERE id = $1", [id]);
+            res.sendStatus(200);
+        }
+        catch (e) {
+            console.log(e);
+            res.status(401).send(e);
+        }
+    });
+}
+exports.deleteUser = deleteUser;
+;
+// TODO: Implement changeAvatar function
