@@ -143,8 +143,15 @@ function updateUsername(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         const { id, new_username } = req.body;
         try {
-            yield connection.query("UPDATE users SET username = $1 WHERE id = $2", [new_username, id]);
-            res.sendStatus(200);
+            // Check if username is already taken
+            const rows = (yield connection.query("SELECT id FROM users WHERE username = $1", [new_username])).rows;
+            if (rows.length > 0) {
+                res.sendStatus(402);
+            }
+            else {
+                yield connection.query("UPDATE users SET username = $1 WHERE id = $2", [new_username, id]);
+                res.sendStatus(200);
+            }
         }
         catch (e) {
             console.log(e);
@@ -157,13 +164,22 @@ exports.updateUsername = updateUsername;
 /// Logic for updating the user's password
 function updatePassword(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
-        const { id, new_password } = req.body;
+        const { id, old_password, new_password } = req.body;
         try {
-            // Hash Password
-            const salt = yield bcrypt_1.default.genSalt(10);
-            const hash = yield bcrypt_1.default.hash(new_password, salt);
-            yield connection.query("UPDATE users SET password = $1 WHERE id = $2", [hash, id]);
-            res.sendStatus(200);
+            const rows = (yield connection.query("SELECT password FROM users WHERE id = $1", [id])).rows;
+            const prevHash = rows[0].password;
+            const match = yield bcrypt_1.default.compare(old_password, prevHash); // verify password
+            // Correct password
+            if (match) {
+                // Hash Password
+                const salt = yield bcrypt_1.default.genSalt(10);
+                const hash = yield bcrypt_1.default.hash(new_password, salt);
+                yield connection.query("UPDATE users SET password = $1 WHERE id = $2", [hash, id]);
+                res.sendStatus(200);
+            }
+            else {
+                res.sendStatus(402);
+            }
         }
         catch (e) {
             console.log(e);

@@ -138,8 +138,15 @@ export async function updateUsername(req: any, res: any): Promise<void> {
     const { id, new_username } = req.body;
 
     try {
-        await connection.query("UPDATE users SET username = $1 WHERE id = $2", [new_username, id]);
-        res.sendStatus(200);
+        // Check if username is already taken
+        const rows = (await connection.query("SELECT id FROM users WHERE username = $1", [new_username])).rows;
+        if (rows.length > 0) {
+            res.sendStatus(402);
+        }
+        else {
+            await connection.query("UPDATE users SET username = $1 WHERE id = $2", [new_username, id]);
+            res.sendStatus(200);
+        }
 
     } catch (e) {
         console.log(e);
@@ -149,15 +156,25 @@ export async function updateUsername(req: any, res: any): Promise<void> {
 
 /// Logic for updating the user's password
 export async function updatePassword(req: any, res: any): Promise<void> {
-    const { id, new_password } = req.body;
+    const { id, old_password, new_password } = req.body;
 
     try {
-        // Hash Password
-        const salt: any = await bcrypt.genSalt(10);
-        const hash: any = await bcrypt.hash(new_password, salt);
-        await connection.query("UPDATE users SET password = $1 WHERE id = $2", [hash, id]);
-        res.sendStatus(200);
+        const rows = (await connection.query("SELECT password FROM users WHERE id = $1", [id])).rows;
 
+        const prevHash = rows[0].password;
+        const match = await bcrypt.compare(old_password, prevHash); // verify password
+
+        // Correct password
+        if (match) {
+            // Hash Password
+            const salt: any = await bcrypt.genSalt(10);
+            const hash: any = await bcrypt.hash(new_password, salt);
+            await connection.query("UPDATE users SET password = $1 WHERE id = $2", [hash, id]);
+            res.sendStatus(200);
+        }
+        else {
+            res.sendStatus(402);
+        }
     } catch (e) {
         console.log(e);
         res.status(401).send(e);
@@ -165,7 +182,7 @@ export async function updatePassword(req: any, res: any): Promise<void> {
 };
 
 export async function deleteUser(req: any, res: any): Promise<void> {
-    const {id} = req.body;
+    const { id } = req.body;
 
     try {
         // Remove all of the user's photos
@@ -174,7 +191,7 @@ export async function deleteUser(req: any, res: any): Promise<void> {
 
         // Delete user from db 
         await connection.query("DELETE FROM users WHERE id = $1", [id]);
-        
+
         res.sendStatus(200);
 
     } catch (e) {
