@@ -204,7 +204,7 @@ exports.updatePassword = updatePassword;
 ;
 function deleteUser(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
-        const { id } = req.body;
+        const id = req.headers['id'];
         try {
             // Remove all of the user's photos
             yield photoController.emptyS3Directory(id + '/');

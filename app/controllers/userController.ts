@@ -197,7 +197,7 @@ export async function updatePassword(req: any, res: any): Promise<void> {
 };
 
 export async function deleteUser(req: any, res: any): Promise<void> {
-    const { id } = req.body;
+    const id: string = req.headers['id'];
 
     try {
         // Remove all of the user's photos
