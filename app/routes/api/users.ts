@@ -12,7 +12,7 @@ router.post('/login', controller.loginUser);
 router.get('/foodprint', controller.verifyToken, controller.getFoodprint);
 router.post('/avatar');
 router.post('/change/password', controller.updatePassword);
-router.post('change/username', controller.updateUsername);
+router.post('/change/username', controller.updateUsername);
 router.delete('/delete', controller.deleteUser);
 
 module.exports = router;
