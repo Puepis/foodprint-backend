@@ -50,6 +50,20 @@ function registerUser(req, res) {
 }
 exports.registerUser = registerUser;
 ;
+function generateJWT(id, username) {
+    const payload = {
+        sub: id,
+        username: username,
+        admin: false,
+    };
+    const key = process.env.SIGNING_KEY;
+    if (typeof key === "string") {
+        // Sign the JWT
+        const token = jsonwebtoken_1.default.sign(payload, key, { algorithm: 'HS256', expiresIn: "10 minutes" });
+        return token;
+    }
+    return null;
+}
 /// Logic for logging in
 function loginUser(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -61,19 +75,11 @@ function loginUser(req, res) {
                 const hash = rows[0].password;
                 const match = yield bcrypt_1.default.compare(password, hash); // verify password
                 if (match) {
-                    const payload = {
-                        sub: rows[0].id,
-                        username: rows[0].username,
-                        admin: false,
-                    };
-                    const key = process.env.SIGNING_KEY;
-                    if (typeof key === "string") {
-                        // Construct JWT
-                        const token = jsonwebtoken_1.default.sign(payload, key, { algorithm: 'HS256', expiresIn: "10 minutes" });
+                    var token = generateJWT(rows[0].id, rows[0].username);
+                    if (typeof token === "string") {
                         res.status(200).send(token);
                     }
                     else {
-                        console.log("No signing key config var found");
                         res.sendStatus(500);
                     }
                 }
@@ -149,8 +155,15 @@ function updateUsername(req, res) {
                 res.sendStatus(402);
             }
             else {
+                // Generate new JWT
                 yield connection.query("UPDATE users SET username = $1 WHERE id = $2", [new_username, id]);
-                res.sendStatus(200);
+                var token = generateJWT(id, new_username);
+                if (typeof token === "string") {
+                    res.status(200).send(token);
+                }
+                else {
+                    res.sendStatus(500);
+                }
             }
         }
         catch (e) {
