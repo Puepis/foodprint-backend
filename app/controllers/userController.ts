@@ -168,7 +168,7 @@ export async function changeAvatar(req: any, res: any): Promise<void> {
         const result: string | boolean = await photoController.updateAvatarInS3(id, avatar_data, avatar_exists);
         if (typeof result === "string") {
             // Successful, save url to db
-            await connection.query("UPDATE TABLE users SET avatar_url = $1 WHERE id = $2", [result, id]);
+            await connection.query("UPDATE users SET avatar_url = $1 WHERE id = $2", [result, id]);
             const token = generateJWT(id, username, result);
             if (typeof token === "string") {
                 res.status(200).send(token);
