@@ -15,7 +15,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteUser = exports.updatePassword = exports.updateUsername = exports.verifyToken = exports.getFoodprint = exports.loginUser = exports.registerUser = void 0;
+exports.deleteUser = exports.updatePassword = exports.updateUsername = exports.changeAvatar = exports.verifyToken = exports.getFoodprint = exports.loginUser = exports.registerUser = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const jwt_decode_1 = __importDefault(require("jwt-decode"));
 const connection = require("../config/dbConnection");
@@ -50,10 +50,12 @@ function registerUser(req, res) {
 }
 exports.registerUser = registerUser;
 ;
-function generateJWT(id, username) {
+/// Generate a JWT for user authorization 
+function generateJWT(id, username, avatar_url) {
     const payload = {
         sub: id,
         username: username,
+        avatar: avatar_url,
         admin: false,
     };
     const key = process.env.SIGNING_KEY;
@@ -69,13 +71,13 @@ function loginUser(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         const { username, password } = req.body;
         try {
-            const rows = (yield connection.query("SELECT id, username, password FROM users WHERE username = $1", [username])).rows;
+            const rows = (yield connection.query("SELECT id, username, password, avatar_url FROM users WHERE username = $1", [username])).rows;
             // User exists
             if (rows[0]) {
                 const hash = rows[0].password;
                 const match = yield bcrypt_1.default.compare(password, hash); // verify password
                 if (match) {
-                    var token = generateJWT(rows[0].id, rows[0].username);
+                    var token = generateJWT(rows[0].id, rows[0].username, rows[0].avatar_url);
                     if (typeof token === "string") {
                         res.status(200).send(token);
                     }
@@ -84,11 +86,11 @@ function loginUser(req, res) {
                     }
                 }
                 else {
-                    res.status(401).send("Invalid Password");
+                    res.sendStatus(401);
                 }
             }
             else {
-                res.status(401).send("Invalid username");
+                res.sendStatus(401);
             }
         }
         catch (e) {
@@ -144,7 +146,45 @@ function verifyToken(req, res, next) {
     }
 }
 exports.verifyToken = verifyToken;
-/// Logic for updating the user's username
+/*
+ * The logic for updating the user's avatar.
+ */
+function changeAvatar(req, res) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const { id, avatar_data } = req.body;
+        try {
+            // Check if avatar already exists
+            const users = (yield connection.query("SELECT avatar_url FROM users WHERE id = $1", [id])).rows;
+            const avatar_url = users[0].avatar_url;
+            var avatar_exists;
+            // Avatar already exists
+            if (avatar_url != null) {
+                avatar_exists = true;
+            }
+            else {
+                avatar_exists = false;
+            }
+            // Upload to S3 
+            const result = yield photoController.updateAvatarInS3(id, avatar_data, avatar_exists);
+            if (typeof result === "string") {
+                // Successful, save url to db
+                yield connection.query("UPDATE TABLE users SET avatar_url = $1 WHERE id = $2", [result, id]);
+                res.status(200).send(result);
+                return;
+            }
+            // Something went wrong
+            res.sendStatus(401);
+        }
+        catch (e) {
+            console.log(e);
+            res.sendStatus(401);
+        }
+    });
+}
+exports.changeAvatar = changeAvatar;
+/*
+ * Logic for updating the user's username.
+ */
 function updateUsername(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         const { id, new_username } = req.body;
@@ -157,7 +197,9 @@ function updateUsername(req, res) {
             else {
                 // Generate new JWT
                 yield connection.query("UPDATE users SET username = $1 WHERE id = $2", [new_username, id]);
-                var token = generateJWT(id, new_username);
+                // Get user avatar
+                const users = (yield connection.query("SELECT avatar_url FROM users WHERE username = $1", [new_username])).rows;
+                var token = generateJWT(id, new_username, users[0].avatar_url);
                 if (typeof token === "string") {
                     res.status(200).send(token);
                 }
@@ -221,4 +263,3 @@ function deleteUser(req, res) {
 }
 exports.deleteUser = deleteUser;
 ;
-// TODO: Implement changeAvatar function

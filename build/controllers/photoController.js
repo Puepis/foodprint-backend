@@ -15,7 +15,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.editPhoto = exports.deletePhoto = exports.savePhoto = exports.retrieveFoodprint = exports.emptyS3Directory = void 0;
+exports.updateAvatarInS3 = exports.editPhoto = exports.deletePhoto = exports.savePhoto = exports.retrieveFoodprint = exports.emptyS3Directory = void 0;
 const connection = require("../config/dbConnection");
 const aws = require("../config/aws");
 let S3_BUCKET = process.env.S3_BUCKET_NAME;
@@ -203,3 +203,27 @@ function editPhoto(req, res) {
 }
 exports.editPhoto = editPhoto;
 ;
+/*
+ * Updates the user's avatar in S3. Returns either the image url or false.
+ */
+function updateAvatarInS3(id, avatar_data, avatar_exists = true) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const avatar_path = id + "/avatar.jpg";
+        // Determine whether to remove existing image
+        if (avatar_exists) {
+            const deleted = yield deletePhotoFromS3(avatar_path);
+            // Delete successful
+            if (!deleted) {
+                return false;
+            }
+        }
+        // Upload new avatar
+        const result = yield uploadImageToS3(avatar_path, avatar_data);
+        if (typeof result === "string") {
+            // Successful
+            return result;
+        }
+        return false;
+    });
+}
+exports.updateAvatarInS3 = updateAvatarInS3;

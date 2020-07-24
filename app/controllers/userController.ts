@@ -40,10 +40,12 @@ export async function registerUser(req: any, res: any): Promise<void> {
     }
 };
 
-function generateJWT(id: any, username: any): string | null {
+/// Generate a JWT for user authorization 
+function generateJWT(id: any, username: any, avatar_url: any): string | null {
     const payload = {
         sub: id, // subject
         username: username,
+        avatar: avatar_url,
         admin: false,
     };
 
@@ -62,7 +64,7 @@ export async function loginUser(req: any, res: any): Promise<void> {
     const { username, password } = req.body;
 
     try {
-        const rows = (await connection.query("SELECT id, username, password FROM users WHERE username = $1", [username])).rows;
+        const rows = (await connection.query("SELECT id, username, password, avatar_url FROM users WHERE username = $1", [username])).rows;
 
         // User exists
         if (rows[0]) {
@@ -70,7 +72,7 @@ export async function loginUser(req: any, res: any): Promise<void> {
             const match = await bcrypt.compare(password, hash); // verify password
             if (match) {
 
-                var token: string | null = generateJWT(rows[0].id, rows[0].username);
+                var token: string | null = generateJWT(rows[0].id, rows[0].username, rows[0].avatar_url);
                 if (typeof token === "string") {
                     res.status(200).send(token);
                 }
@@ -80,11 +82,11 @@ export async function loginUser(req: any, res: any): Promise<void> {
 
             }
             else {
-                res.status(401).send("Invalid Password");
+                res.sendStatus(401);
             }
         }
         else {
-            res.status(401).send("Invalid username");
+            res.sendStatus(401);
         }
     } catch (e) {
         console.log(e);
@@ -141,7 +143,46 @@ export function verifyToken(req: any, res: any, next: any): void {
     }
 }
 
-/// Logic for updating the user's username
+/*
+ * The logic for updating the user's avatar.
+ */
+export async function changeAvatar(req: any, res: any): Promise<void> {
+    const { id, avatar_data } = req.body;
+
+    try {
+        // Check if avatar already exists
+        const users = (await connection.query("SELECT avatar_url FROM users WHERE id = $1", [id])).rows;
+        const avatar_url = users[0].avatar_url;
+        var avatar_exists: boolean;
+
+        // Avatar already exists
+        if (avatar_url != null) {
+            avatar_exists = true;
+        }
+        else {
+            avatar_exists = false;
+        }
+
+        // Upload to S3 
+        const result: string | boolean  = await photoController.updateAvatarInS3(id, avatar_data, avatar_exists);
+        if (typeof result === "string") {
+            // Successful, save url to db
+            await connection.query("UPDATE TABLE users SET avatar_url = $1 WHERE id = $2", [result, id]);
+            res.status(200).send(result);
+            return;
+        }
+        // Something went wrong
+        res.sendStatus(401);
+    }
+    catch (e) {
+        console.log(e);
+        res.sendStatus(401);
+    }
+}
+
+/*
+ * Logic for updating the user's username.
+ */
 export async function updateUsername(req: any, res: any): Promise<void> {
     const { id, new_username } = req.body;
 
@@ -154,7 +195,10 @@ export async function updateUsername(req: any, res: any): Promise<void> {
         else {
             // Generate new JWT
             await connection.query("UPDATE users SET username = $1 WHERE id = $2", [new_username, id]);
-            var token: string | null = generateJWT(id, new_username);
+
+            // Get user avatar
+            const users = (await connection.query("SELECT avatar_url FROM users WHERE username = $1", [new_username])).rows;
+            var token: string | null = generateJWT(id, new_username, users[0].avatar_url);
             if (typeof token === "string") {
                 res.status(200).send(token);
             }
@@ -215,4 +259,3 @@ export async function deleteUser(req: any, res: any): Promise<void> {
     }
 };
 
-// TODO: Implement changeAvatar function

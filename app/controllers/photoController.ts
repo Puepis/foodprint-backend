@@ -14,13 +14,13 @@ import dotenv from "dotenv";
 import { PutObjectRequest } from 'aws-sdk/clients/s3';
 dotenv.config();
 
-async function uploadImageToS3(path: string, imageData: any): Promise<String | null> {
+async function uploadImageToS3(path: string, imageData: any): Promise<string | null> {
     if (typeof S3_BUCKET === "string") {
         let uploadParams: PutObjectRequest = { // config
             Bucket: S3_BUCKET,
             Key: path,
             Body: Buffer.from(imageData),
-            Metadata: {'type': 'jpg'},
+            Metadata: { 'type': 'jpg' },
             ACL: 'public-read',
         };
 
@@ -56,26 +56,26 @@ export async function emptyS3Directory(dir: string): Promise<void> {
             Bucket: S3_BUCKET,
             Prefix: dir
         };
-    
+
         // Get all objects from directory 
         const listedObjects: any = await s3.listObjectsV2(listParams).promise();
-    
+
         if (listedObjects.Contents.length === 0) return;
-    
+
         var deleteObjects: any[] = [];
         const deleteParams = {
             Bucket: S3_BUCKET,
             Delete: { Objects: deleteObjects }
         };
-    
+
         // Add all objects to the delete array
-        listedObjects.Contents.forEach(({Key}: any ) => {
+        listedObjects.Contents.forEach(({ Key }: any) => {
             deleteParams.Delete.Objects.push({ Key });
         });
-    
+
         // Delete objects
         await s3.deleteObjects(deleteParams).promise();
-        
+
         // Continue deleting objects if there are more left
         if (listedObjects.IsTruncated) await emptyS3Directory(dir);
     }
@@ -110,19 +110,19 @@ export async function retrieveFoodprint(id: number): Promise<any[] | null> {
 
 // Convert string to Uint8Array
 function parseImageData(str: String): any {
-    const strBytes: Array<String> = str.substring(1, str.length).split(', '); 
+    const strBytes: Array<String> = str.substring(1, str.length).split(', ');
     const numBytes: Array<number> = strBytes.map((value) => Number(value));
     return new Uint8Array(numBytes);
-} 
+}
 
 /// Responsible for saving the photo to db
 export async function savePhoto(req: any, res: any): Promise<void> {
 
-    
+
     const user_id: number = req.body.userId;
     const { path, favourite, details, location } = req.body.image;
     const data: Uint8Array = parseImageData(req.body.image.data);
-    
+
     // Store image data in S3 Bucket
     const url: String | null = await uploadImageToS3(path, data);
     if (url != null) {
@@ -192,4 +192,30 @@ export async function editPhoto(req: any, res: any): Promise<void> {
         res.sendStatus(401);
     }
 };
+
+/*
+ * Updates the user's avatar in S3. Returns either the image url or false.
+ */
+export async function updateAvatarInS3(id: any, avatar_data: any, avatar_exists: boolean = true): Promise<string | boolean> {
+
+    const avatar_path: string = id + "/avatar.jpg";
+
+    // Determine whether to remove existing image
+    if (avatar_exists) {
+        const deleted: boolean = await deletePhotoFromS3(avatar_path);
+        // Delete successful
+        if (!deleted) {
+            return false;
+        }
+    }
+
+    // Upload new avatar
+    const result: string | null = await uploadImageToS3(avatar_path, avatar_data);  
+    if (typeof result === "string") {
+        // Successful
+        return result;
+    }
+    return false;
+}
+
 
