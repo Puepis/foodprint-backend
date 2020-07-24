@@ -147,15 +147,16 @@ function verifyToken(req, res, next) {
 }
 exports.verifyToken = verifyToken;
 /*
- * The logic for updating the user's avatar.
+ * The logic for updating the user's avatar. A successful response contains the updated JWT
  */
 function changeAvatar(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         const { id, avatar_data } = req.body;
         try {
             // Check if avatar already exists
-            const users = (yield connection.query("SELECT avatar_url FROM users WHERE id = $1", [id])).rows;
+            const users = (yield connection.query("SELECT username, avatar_url FROM users WHERE id = $1", [id])).rows;
             const avatar_url = users[0].avatar_url;
+            const username = users[0].username;
             var avatar_exists;
             // Avatar already exists
             if (avatar_url != null) {
@@ -169,7 +170,13 @@ function changeAvatar(req, res) {
             if (typeof result === "string") {
                 // Successful, save url to db
                 yield connection.query("UPDATE TABLE users SET avatar_url = $1 WHERE id = $2", [result, id]);
-                res.status(200).send(result);
+                const token = generateJWT(id, username, result);
+                if (typeof token === "string") {
+                    res.status(200).send(token);
+                }
+                else {
+                    res.sendStatus(401);
+                }
                 return;
             }
             // Something went wrong

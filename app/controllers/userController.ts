@@ -144,15 +144,16 @@ export function verifyToken(req: any, res: any, next: any): void {
 }
 
 /*
- * The logic for updating the user's avatar.
+ * The logic for updating the user's avatar. A successful response contains the updated JWT
  */
 export async function changeAvatar(req: any, res: any): Promise<void> {
     const { id, avatar_data } = req.body;
 
     try {
         // Check if avatar already exists
-        const users = (await connection.query("SELECT avatar_url FROM users WHERE id = $1", [id])).rows;
+        const users = (await connection.query("SELECT username, avatar_url FROM users WHERE id = $1", [id])).rows;
         const avatar_url = users[0].avatar_url;
+        const username = users[0].username;
         var avatar_exists: boolean;
 
         // Avatar already exists
@@ -164,11 +165,17 @@ export async function changeAvatar(req: any, res: any): Promise<void> {
         }
 
         // Upload to S3 
-        const result: string | boolean  = await photoController.updateAvatarInS3(id, avatar_data, avatar_exists);
+        const result: string | boolean = await photoController.updateAvatarInS3(id, avatar_data, avatar_exists);
         if (typeof result === "string") {
             // Successful, save url to db
             await connection.query("UPDATE TABLE users SET avatar_url = $1 WHERE id = $2", [result, id]);
-            res.status(200).send(result);
+            const token = generateJWT(id, username, result);
+            if (typeof token === "string") {
+                res.status(200).send(token);
+            }
+            else {
+                res.sendStatus(401);
+            }
             return;
         }
         // Something went wrong
