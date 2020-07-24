@@ -151,22 +151,13 @@ exports.verifyToken = verifyToken;
  */
 function changeAvatar(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
-        const { id, avatar_data } = req.body;
+        const { id, avatar_data, file_name } = req.body;
         try {
             // Check if avatar already exists
-            const users = (yield connection.query("SELECT username, avatar_url FROM users WHERE id = $1", [id])).rows;
-            const avatar_url = users[0].avatar_url;
+            const users = (yield connection.query("SELECT username FROM users WHERE id = $1", [id])).rows;
             const username = users[0].username;
-            var avatar_exists;
-            // Avatar already exists
-            if (avatar_url != null) {
-                avatar_exists = true;
-            }
-            else {
-                avatar_exists = false;
-            }
             // Upload to S3 
-            const result = yield photoController.updateAvatarInS3(id, avatar_data, avatar_exists);
+            const result = yield photoController.updateAvatarInS3(id, avatar_data, file_name);
             if (typeof result === "string") {
                 // Successful, save url to db
                 yield connection.query("UPDATE users SET avatar_url = $1 WHERE id = $2", [result, id]);

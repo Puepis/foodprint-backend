@@ -196,22 +196,17 @@ export async function editPhoto(req: any, res: any): Promise<void> {
 /*
  * Updates the user's avatar in S3. Returns either the image url or false.
  */
-export async function updateAvatarInS3(id: any, avatar_data: any, avatar_exists: boolean = true): Promise<string | boolean> {
+export async function updateAvatarInS3(id: any, avatar_data: any, file_name: any): Promise<string | boolean> {
 
-    const avatar_path: string = id + "/avatar.jpg";
+    const avatar_dir: string = id + "/avatar/";
+    const new_path = id + "/avatar/" + file_name; 
     const data: Uint8Array = parseImageData(avatar_data); 
 
-    // Determine whether to remove existing image
-    if (avatar_exists) {
-        const deleted: boolean = await deletePhotoFromS3(avatar_path);
-        // Delete successful
-        if (!deleted) {
-            return false;
-        }
-    }
+    // Remove current avatar
+    await emptyS3Directory(avatar_dir);
 
     // Upload new avatar
-    const result: string | null = await uploadImageToS3(avatar_path, data);  
+    const result: string | null = await uploadImageToS3(new_path, data);  
     if (typeof result === "string") {
         // Successful
         return result;

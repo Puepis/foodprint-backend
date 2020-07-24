@@ -206,20 +206,15 @@ exports.editPhoto = editPhoto;
 /*
  * Updates the user's avatar in S3. Returns either the image url or false.
  */
-function updateAvatarInS3(id, avatar_data, avatar_exists = true) {
+function updateAvatarInS3(id, avatar_data, file_name) {
     return __awaiter(this, void 0, void 0, function* () {
-        const avatar_path = id + "/avatar.jpg";
+        const avatar_dir = id + "/avatar/";
+        const new_path = id + "/avatar/" + file_name;
         const data = parseImageData(avatar_data);
-        // Determine whether to remove existing image
-        if (avatar_exists) {
-            const deleted = yield deletePhotoFromS3(avatar_path);
-            // Delete successful
-            if (!deleted) {
-                return false;
-            }
-        }
+        // Remove current avatar
+        yield emptyS3Directory(avatar_dir);
         // Upload new avatar
-        const result = yield uploadImageToS3(avatar_path, data);
+        const result = yield uploadImageToS3(new_path, data);
         if (typeof result === "string") {
             // Successful
             return result;
