@@ -45,7 +45,7 @@ function generateJWT(id: any, username: any, avatar_url: any): string | null {
     const payload = {
         sub: id, // subject
         username: username,
-        avatar: avatar_url,
+        avatar_url: avatar_url,
         admin: false,
     };
 

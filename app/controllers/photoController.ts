@@ -199,6 +199,7 @@ export async function editPhoto(req: any, res: any): Promise<void> {
 export async function updateAvatarInS3(id: any, avatar_data: any, avatar_exists: boolean = true): Promise<string | boolean> {
 
     const avatar_path: string = id + "/avatar.jpg";
+    const data: Uint8Array = parseImageData(avatar_data); 
 
     // Determine whether to remove existing image
     if (avatar_exists) {
@@ -210,7 +211,7 @@ export async function updateAvatarInS3(id: any, avatar_data: any, avatar_exists:
     }
 
     // Upload new avatar
-    const result: string | null = await uploadImageToS3(avatar_path, avatar_data);  
+    const result: string | null = await uploadImageToS3(avatar_path, data);  
     if (typeof result === "string") {
         // Successful
         return result;

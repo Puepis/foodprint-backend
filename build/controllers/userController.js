@@ -55,7 +55,7 @@ function generateJWT(id, username, avatar_url) {
     const payload = {
         sub: id,
         username: username,
-        avatar: avatar_url,
+        avatar_url: avatar_url,
         admin: false,
     };
     const key = process.env.SIGNING_KEY;
