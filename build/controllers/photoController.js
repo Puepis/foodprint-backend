@@ -18,18 +18,19 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateAvatarInS3 = exports.editPhoto = exports.deletePhoto = exports.savePhoto = exports.retrieveFoodprint = exports.emptyS3Directory = void 0;
 const connection = require("../config/dbConnection");
 const aws = require("../config/aws");
-let S3_BUCKET = process.env.S3_BUCKET_NAME;
+const lodash_get_1 = __importDefault(require("lodash.get"));
+const S3_BUCKET = process.env.S3_BUCKET_NAME;
 const s3 = new aws.S3(); // service object
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 function uploadImageToS3(path, imageData) {
     return __awaiter(this, void 0, void 0, function* () {
         if (typeof S3_BUCKET === "string") {
-            let uploadParams = {
+            const uploadParams = {
                 Bucket: S3_BUCKET,
                 Key: path,
                 Body: Buffer.from(imageData),
-                Metadata: { 'type': 'jpg' },
+                ContentType: "image/jpeg",
                 ACL: 'public-read',
             };
             try {
@@ -37,7 +38,7 @@ function uploadImageToS3(path, imageData) {
                 return res.Location;
             }
             catch (e) {
-                console.log("Error uploading the image", e);
+                console.error("S3 UPLOAD ERROR: ", e);
             }
         }
         return null;
@@ -45,20 +46,20 @@ function uploadImageToS3(path, imageData) {
 }
 function deletePhotoFromS3(path) {
     return __awaiter(this, void 0, void 0, function* () {
-        if (typeof S3_BUCKET === "string") {
-            try {
-                const params = {
-                    Bucket: S3_BUCKET,
-                    Key: path
-                };
-                yield s3.deleteObject(params).promise();
-                return true;
-            }
-            catch (e) {
-                console.log("Error deleting file", e);
-            }
+        if (typeof S3_BUCKET !== "string")
+            return false;
+        try {
+            const params = {
+                Bucket: S3_BUCKET,
+                Key: path
+            };
+            yield s3.deleteObject(params).promise();
+            return true;
         }
-        return false;
+        catch (e) {
+            console.error("S3 DELETE OBJECT ERROR: ", e);
+            return false;
+        }
     });
 }
 function emptyS3Directory(dir) {
@@ -70,9 +71,9 @@ function emptyS3Directory(dir) {
             };
             // Get all objects from directory 
             const listedObjects = yield s3.listObjectsV2(listParams).promise();
-            if (listedObjects.Contents.length === 0)
+            if (!lodash_get_1.default(listedObjects, "Contents.length", null))
                 return;
-            var deleteObjects = [];
+            let deleteObjects = [];
             const deleteParams = {
                 Bucket: S3_BUCKET,
                 Delete: { Objects: deleteObjects }
@@ -103,16 +104,14 @@ function retrieveFoodprint(id) {
         const typesQuery = "SELECT type FROM restaurant_types WHERE restaurant_id = $1";
         try {
             const restaurants = (yield connection.query(restaurantQuery, [id])).rows;
-            for (let r of restaurants) {
-                let photos = (yield connection.query(photoQuery, [r.restaurant_id, id])).rows;
-                let types = (yield connection.query(typesQuery, [r.restaurant_id])).rows;
-                r.photos = photos;
-                r.restaurant_types = types;
-            }
-            return restaurants;
+            return yield Promise.all(restaurants.map((restaurant) => __awaiter(this, void 0, void 0, function* () {
+                const photos = (yield connection.query(photoQuery, [restaurant.restaurant_id, id])).rows;
+                const types = (yield connection.query(typesQuery, [restaurant.restaurant_id])).rows;
+                return Object.assign(Object.assign({}, restaurants), { photos: photos, types: types });
+            })));
         }
         catch (e) {
-            console.log(e);
+            console.error("ERROR: ", e);
             return null;
         }
     });
@@ -120,7 +119,7 @@ function retrieveFoodprint(id) {
 exports.retrieveFoodprint = retrieveFoodprint;
 // Convert string to Uint8Array
 function parseImageData(str) {
-    const strBytes = str.substring(1, str.length).split(', ');
+    const strBytes = str.substring(1, str.length - 1).split(', ');
     const numBytes = strBytes.map((value) => Number(value));
     return new Uint8Array(numBytes);
 }
@@ -132,7 +131,7 @@ function savePhoto(req, res) {
         const data = parseImageData(req.body.image.data);
         // Store image data in S3 Bucket
         const url = yield uploadImageToS3(path, data);
-        if (url != null) {
+        if (url) {
             try {
                 // 1. Check if restaurant exists in restaurant table, if not then insert
                 const saved_restaurants = (yield connection.query("SELECT name FROM restaurants WHERE id = $1", [location.id])).rows;
@@ -141,10 +140,10 @@ function savePhoto(req, res) {
                     VALUES ($1, $2, $3, $4, $5)", [location.id, location.name, location.rating, location.lat,
                         location.lng]);
                     const types = location.types;
-                    for (var type of types) {
+                    yield Promise.all(types.map((type) => __awaiter(this, void 0, void 0, function* () {
                         yield connection.query("INSERT INTO restaurant_types (restaurant_id, type) \
                     VALUES ($1, $2)", [location.id, type]);
-                    }
+                    })));
                 }
                 // 2. Store image details in pgsql table
                 yield connection.query("INSERT INTO photos (path, url, user_id, photo_name, price, comments, restaurant_id, time_taken, favourite) \
@@ -152,7 +151,7 @@ function savePhoto(req, res) {
                     location.id, details.timestamp, favourite]);
             }
             catch (e) {
-                console.log(e);
+                console.error("DATABASE QUERY ERROR: ", e);
                 res.sendStatus(401);
             }
             // Successful
@@ -177,7 +176,7 @@ function deletePhoto(req, res) {
                 res.sendStatus(200);
             }
             catch (e) {
-                console.log(e);
+                console.error("ERROR DELETING PHOTO FROM DATABASE: ", e);
                 res.sendStatus(401);
             }
         }
@@ -196,7 +195,7 @@ function editPhoto(req, res) {
             res.sendStatus(200);
         }
         catch (e) {
-            console.log(e);
+            console.error("ERROR EDITING PHOTO IN DATABASE: ", e);
             res.sendStatus(401);
         }
     });

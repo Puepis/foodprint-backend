@@ -43,8 +43,8 @@ function registerUser(req, res) {
             }
         }
         catch (e) {
-            console.log(e);
-            res.status(401).json(e);
+            console.error("ERROR REGISTERING USER TO DATABASE: ", e);
+            res.sendStatus(401);
         }
     });
 }
@@ -94,8 +94,8 @@ function loginUser(req, res) {
             }
         }
         catch (e) {
-            console.log(e);
-            res.status(401).send(e);
+            console.error("ERROR LOGGING USER IN DATABASE: ", e);
+            res.sendStatus(401);
         }
     });
 }
@@ -174,7 +174,7 @@ function changeAvatar(req, res) {
             res.sendStatus(401);
         }
         catch (e) {
-            console.log(e);
+            console.error("ERROR UPDATING USER AVATAR: ", e);
             res.sendStatus(401);
         }
     });
@@ -207,8 +207,8 @@ function updateUsername(req, res) {
             }
         }
         catch (e) {
-            console.log(e);
-            res.status(401).send(e);
+            console.error("ERROR UPDATING USERNAME: ", e);
+            res.sendStatus(401);
         }
     });
 }
@@ -235,8 +235,8 @@ function updatePassword(req, res) {
             }
         }
         catch (e) {
-            console.log(e);
-            res.status(401).send(e);
+            console.error("ERROR UPDATING PASSWORD: ", e);
+            res.sendStatus(401);
         }
     });
 }
@@ -254,8 +254,8 @@ function deleteUser(req, res) {
             res.sendStatus(200);
         }
         catch (e) {
-            console.log(e);
-            res.status(401).send(e);
+            console.error("ERROR DELETING USER: ", e);
+            res.sendStatus(401);
         }
     });
 }
