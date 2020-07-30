@@ -11,7 +11,7 @@ var corsConfig = {
 }
 
 // Create express app
-const app: express.Application =  express();
+const app: express.Application = express();
 
 app.use(cors(corsConfig)); // Enable all CORS requests
 

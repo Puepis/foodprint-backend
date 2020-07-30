@@ -5,8 +5,9 @@
 
 import connection = require('../config/dbConnection');
 import aws = require('../config/aws');
+import get from "lodash.get";
 
-let S3_BUCKET: string | undefined = process.env.S3_BUCKET_NAME;
+const S3_BUCKET: string | undefined = process.env.S3_BUCKET_NAME;
 
 const s3 = new aws.S3(); // service object
 
@@ -16,11 +17,11 @@ dotenv.config();
 
 async function uploadImageToS3(path: string, imageData: any): Promise<string | null> {
     if (typeof S3_BUCKET === "string") {
-        let uploadParams: PutObjectRequest = { // config
+        const uploadParams: PutObjectRequest = { // config
             Bucket: S3_BUCKET,
             Key: path,
             Body: Buffer.from(imageData),
-            Metadata: { 'type': 'jpg' },
+            ContentType: "image/jpeg",
             ACL: 'public-read',
         };
 
@@ -28,26 +29,26 @@ async function uploadImageToS3(path: string, imageData: any): Promise<string | n
             const res = await s3.upload(uploadParams).promise(); // upload image
             return res.Location;
         } catch (e) {
-            console.log("Error uploading the image", e);
+            console.error("S3 UPLOAD ERROR: ", e);
         }
     }
     return null;
 }
 
 async function deletePhotoFromS3(path: string): Promise<boolean> {
-    if (typeof S3_BUCKET === "string") {
-        try {
-            const params = {
-                Bucket: S3_BUCKET,
-                Key: path
-            }
-            await s3.deleteObject(params).promise();
-            return true;
-        } catch (e) {
-            console.log("Error deleting file", e);
+    if (typeof S3_BUCKET !== "string") return false;
+
+    try {
+        const params = {
+            Bucket: S3_BUCKET,
+            Key: path
         }
+        await s3.deleteObject(params).promise();
+        return true;
+    } catch (e) {
+        console.error("S3 DELETE OBJECT ERROR: ", e);
+        return false;
     }
-    return false;
 }
 
 export async function emptyS3Directory(dir: string): Promise<void> {
@@ -60,9 +61,9 @@ export async function emptyS3Directory(dir: string): Promise<void> {
         // Get all objects from directory 
         const listedObjects: any = await s3.listObjectsV2(listParams).promise();
 
-        if (listedObjects.Contents.length === 0) return;
+        if (!get(listedObjects, "Contents.length", null)) return;
 
-        var deleteObjects: any[] = [];
+        let deleteObjects: any[] = [];
         const deleteParams = {
             Bucket: S3_BUCKET,
             Delete: { Objects: deleteObjects }
@@ -94,24 +95,23 @@ export async function retrieveFoodprint(id: number): Promise<any[] | null> {
     const typesQuery = "SELECT type FROM restaurant_types WHERE restaurant_id = $1";
 
     try {
-        const restaurants: any[] = (await connection.query(restaurantQuery, [id])).rows;
-        for (let r of restaurants) {
-            let photos: any[] = (await connection.query(photoQuery, [r.restaurant_id, id])).rows;
-            let types: any[] = (await connection.query(typesQuery, [r.restaurant_id])).rows;
-            r.photos = photos;
-            r.restaurant_types = types;
-        }
-        return restaurants;
+        const restaurants = (await connection.query(restaurantQuery, [id])).rows;
+        return await Promise.all(restaurants.map(async restaurant => {
+
+            const photos = (await connection.query(photoQuery, [restaurant.restaurant_id, id])).rows;
+            const types = (await connection.query(typesQuery, [restaurant.restaurant_id])).rows;
+            return { ...restaurants, photos: photos, types: types }
+        }));
     } catch (e) {
-        console.log(e);
+        console.error("ERROR: ", e);
         return null;
     }
 }
 
 // Convert string to Uint8Array
-function parseImageData(str: String): any {
-    const strBytes: Array<String> = str.substring(1, str.length).split(', ');
-    const numBytes: Array<number> = strBytes.map((value) => Number(value));
+function parseImageData(str: string) {
+    const strBytes: string[] = str.substring(1, str.length - 1).split(', ');
+    const numBytes: number[] = strBytes.map((value) => Number(value));
     return new Uint8Array(numBytes);
 }
 
@@ -124,12 +124,12 @@ export async function savePhoto(req: any, res: any): Promise<void> {
     const data: Uint8Array = parseImageData(req.body.image.data);
 
     // Store image data in S3 Bucket
-    const url: String | null = await uploadImageToS3(path, data);
-    if (url != null) {
+    const url: string | null = await uploadImageToS3(path, data);
+    if (url) {
 
         try {
             // 1. Check if restaurant exists in restaurant table, if not then insert
-            const saved_restaurants: any[] = (await connection.query("SELECT name FROM restaurants WHERE id = $1", [location.id])).rows;
+            const saved_restaurants = (await connection.query("SELECT name FROM restaurants WHERE id = $1", [location.id])).rows;
 
             if (saved_restaurants.length == 0) {
                 await connection.query("INSERT INTO restaurants (id, name, rating, lat, lng) \
@@ -137,10 +137,10 @@ export async function savePhoto(req: any, res: any): Promise<void> {
                 location.lng]);
 
                 const types: any[] = location.types;
-                for (var type of types) {
+                await Promise.all(types.map(async type => {
                     await connection.query("INSERT INTO restaurant_types (restaurant_id, type) \
                     VALUES ($1, $2)", [location.id, type]);
-                }
+                }));
             }
 
             // 2. Store image details in pgsql table
@@ -149,7 +149,7 @@ export async function savePhoto(req: any, res: any): Promise<void> {
                 location.id, details.timestamp, favourite]);
 
         } catch (e) {
-            console.log(e);
+            console.error("DATABASE QUERY ERROR: ", e);
             res.sendStatus(401);
         }
         // Successful
@@ -172,7 +172,7 @@ export async function deletePhoto(req: any, res: any): Promise<void> {
             await connection.query("DELETE FROM photos WHERE path = $1", [path]);
             res.sendStatus(200);
         } catch (e) {
-            console.log(e);
+            console.error("ERROR DELETING PHOTO FROM DATABASE: ", e);
             res.sendStatus(401);
         }
     }
@@ -188,7 +188,7 @@ export async function editPhoto(req: any, res: any): Promise<void> {
             [photo_name, price, comments, favourite, path]);
         res.sendStatus(200);
     } catch (e) {
-        console.log(e);
+        console.error("ERROR EDITING PHOTO IN DATABASE: ", e);
         res.sendStatus(401);
     }
 };
@@ -199,14 +199,14 @@ export async function editPhoto(req: any, res: any): Promise<void> {
 export async function updateAvatarInS3(id: any, avatar_data: any, file_name: any): Promise<string | boolean> {
 
     const avatar_dir: string = id + "/avatar/";
-    const new_path = id + "/avatar/" + file_name; 
-    const data: Uint8Array = parseImageData(avatar_data); 
+    const new_path = id + "/avatar/" + file_name;
+    const data: Uint8Array = parseImageData(avatar_data);
 
     // Remove current avatar
     await emptyS3Directory(avatar_dir);
 
     // Upload new avatar
-    const result: string | null = await uploadImageToS3(new_path, data);  
+    const result: string | null = await uploadImageToS3(new_path, data);
     if (typeof result === "string") {
         // Successful
         return result;

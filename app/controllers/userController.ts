@@ -35,8 +35,8 @@ export async function registerUser(req: any, res: any): Promise<void> {
             res.sendStatus(200);
         }
     } catch (e) {
-        console.log(e);
-        res.status(401).json(e);
+        console.error("ERROR REGISTERING USER TO DATABASE: ", e);
+        res.sendStatus(401);
     }
 };
 
@@ -49,7 +49,7 @@ function generateJWT(id: any, username: any, avatar_url: any): string | null {
         admin: false,
     };
 
-    const key: String | undefined = process.env.SIGNING_KEY;
+    const key: string | undefined = process.env.SIGNING_KEY;
     if (typeof key === "string") {
 
         // Sign the JWT
@@ -89,8 +89,8 @@ export async function loginUser(req: any, res: any): Promise<void> {
             res.sendStatus(401);
         }
     } catch (e) {
-        console.log(e);
-        res.status(401).send(e);
+        console.error("ERROR LOGGING USER IN DATABASE: ", e);
+        res.sendStatus(401);
     }
 };
 
@@ -172,7 +172,7 @@ export async function changeAvatar(req: any, res: any): Promise<void> {
         res.sendStatus(401);
     }
     catch (e) {
-        console.log(e);
+        console.error("ERROR UPDATING USER AVATAR: ", e);
         res.sendStatus(401);
     }
 }
@@ -205,8 +205,8 @@ export async function updateUsername(req: any, res: any): Promise<void> {
         }
 
     } catch (e) {
-        console.log(e);
-        res.status(401).send(e);
+        console.error("ERROR UPDATING USERNAME: ", e);
+        res.sendStatus(401);
     }
 };
 
@@ -232,8 +232,8 @@ export async function updatePassword(req: any, res: any): Promise<void> {
             res.sendStatus(402);
         }
     } catch (e) {
-        console.log(e);
-        res.status(401).send(e);
+        console.error("ERROR UPDATING PASSWORD: ", e);
+        res.sendStatus(401);
     }
 };
 
@@ -251,8 +251,8 @@ export async function deleteUser(req: any, res: any): Promise<void> {
         res.sendStatus(200);
 
     } catch (e) {
-        console.log(e);
-        res.status(401).send(e);
+        console.error("ERROR DELETING USER: ", e);
+        res.sendStatus(401);
     }
 };
 
