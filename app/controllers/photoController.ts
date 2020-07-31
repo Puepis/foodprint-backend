@@ -100,7 +100,7 @@ export async function retrieveFoodprint(id: number): Promise<any[] | null> {
 
             const photos = (await connection.query(photoQuery, [restaurant.restaurant_id, id])).rows;
             const types = (await connection.query(typesQuery, [restaurant.restaurant_id])).rows;
-            return { ...restaurant, photos: photos, types: types }
+            return { ...restaurant, photos: photos, restaurant_types: types }
         }));
     } catch (e) {
         console.error("RETRIEVING FOODPRINT ERROR: ", e);
