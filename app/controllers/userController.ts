@@ -103,7 +103,7 @@ export async function getFoodprint(req: any, res: any): Promise<void> {
     const foodprint: any[] | null = await photoController.retrieveFoodprint(id);
 
     // Could not retrieve foodprint
-    if (foodprint == null) {
+    if (!foodprint) {
         res.sendStatus(400);
     } else {
         res.status(200).json({ foodprint: foodprint });

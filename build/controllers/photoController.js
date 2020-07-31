@@ -107,11 +107,11 @@ function retrieveFoodprint(id) {
             return yield Promise.all(restaurants.map((restaurant) => __awaiter(this, void 0, void 0, function* () {
                 const photos = (yield connection.query(photoQuery, [restaurant.restaurant_id, id])).rows;
                 const types = (yield connection.query(typesQuery, [restaurant.restaurant_id])).rows;
-                return Object.assign(Object.assign({}, restaurants), { photos: photos, types: types });
+                return Object.assign(Object.assign({}, restaurant), { photos: photos, types: types });
             })));
         }
         catch (e) {
-            console.error("ERROR: ", e);
+            console.error("RETRIEVING FOODPRINT ERROR: ", e);
             return null;
         }
     });

@@ -109,7 +109,7 @@ function getFoodprint(req, res) {
         const id = decoded.sub;
         const foodprint = yield photoController.retrieveFoodprint(id);
         // Could not retrieve foodprint
-        if (foodprint == null) {
+        if (!foodprint) {
             res.sendStatus(400);
         }
         else {
