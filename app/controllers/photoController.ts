@@ -15,40 +15,33 @@ import dotenv from "dotenv";
 import { PutObjectRequest } from 'aws-sdk/clients/s3';
 dotenv.config();
 
-async function uploadImageToS3(path: string, imageData: any): Promise<string | null> {
-    if (typeof S3_BUCKET === "string") {
-        const uploadParams: PutObjectRequest = { // config
-            Bucket: S3_BUCKET,
-            Key: path,
-            Body: Buffer.from(imageData),
-            ContentType: "image/jpeg",
-            ACL: 'public-read',
-        };
+const uploadImageToS3 = async (path: string, imageData: any): Promise<string | null> => {
+    if (typeof S3_BUCKET !== "string") return null;
 
-        try {
-            const res = await s3.upload(uploadParams).promise(); // upload image
-            return res.Location;
-        } catch (e) {
-            console.error("S3 UPLOAD ERROR: ", e);
-        }
-    }
+    const uploadParams: PutObjectRequest = { // config
+        Bucket: S3_BUCKET,
+        Key: path,
+        Body: Buffer.from(imageData),
+        ContentType: "image/jpeg",
+        ACL: 'public-read',
+    };
+
+    s3.upload(uploadParams).promise().then(res => res.Location).catch(e => {
+        console.error("S3 UPLOAD ERROR: ", e);
+    });
     return null;
 }
 
-async function deletePhotoFromS3(path: string): Promise<boolean> {
+const deletePhotoFromS3 = async (path: string): Promise<boolean> => {
     if (typeof S3_BUCKET !== "string") return false;
 
-    try {
-        const params = {
-            Bucket: S3_BUCKET,
-            Key: path
-        }
-        await s3.deleteObject(params).promise();
-        return true;
-    } catch (e) {
-        console.error("S3 DELETE OBJECT ERROR: ", e);
-        return false;
+    const params = {
+        Bucket: S3_BUCKET,
+        Key: path
     }
+    s3.deleteObject(params).promise().then((_) => true).catch(e =>
+        console.error("S3 DELETE OBJECT ERROR: ", e));
+    return false;
 }
 
 export async function emptyS3Directory(dir: string): Promise<void> {
@@ -109,7 +102,7 @@ export async function retrieveFoodprint(id: number): Promise<any[] | null> {
 }
 
 // Convert string to Uint8Array
-function parseImageData(str: string) {
+const parseImageData = (str: string) => {
     const strBytes: string[] = str.substring(1, str.length - 1).split(', ');
     const numBytes: number[] = strBytes.map((value) => Number(value));
     return new Uint8Array(numBytes);
@@ -202,14 +195,16 @@ export async function updateAvatarInS3(id: any, avatar_data: any, file_name: any
     const new_path = id + "/avatar/" + file_name;
     const data: Uint8Array = parseImageData(avatar_data);
 
-    // Remove current avatar
-    await emptyS3Directory(avatar_dir);
+    try {
+        // Remove current avatar
+        await emptyS3Directory(avatar_dir);
 
-    // Upload new avatar
-    const result: string | null = await uploadImageToS3(new_path, data);
-    if (typeof result === "string") {
-        // Successful
-        return result;
+        // Upload new avatar
+        const result: string | null = await uploadImageToS3(new_path, data);
+        if (typeof result === "string") return result;
+    }
+    catch (e) {
+        console.error("ERROR UPDATING AVATAR", e);
     }
     return false;
 }

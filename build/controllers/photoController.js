@@ -23,45 +23,31 @@ const S3_BUCKET = process.env.S3_BUCKET_NAME;
 const s3 = new aws.S3(); // service object
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
-function uploadImageToS3(path, imageData) {
-    return __awaiter(this, void 0, void 0, function* () {
-        if (typeof S3_BUCKET === "string") {
-            const uploadParams = {
-                Bucket: S3_BUCKET,
-                Key: path,
-                Body: Buffer.from(imageData),
-                ContentType: "image/jpeg",
-                ACL: 'public-read',
-            };
-            try {
-                const res = yield s3.upload(uploadParams).promise(); // upload image
-                return res.Location;
-            }
-            catch (e) {
-                console.error("S3 UPLOAD ERROR: ", e);
-            }
-        }
+const uploadImageToS3 = (path, imageData) => __awaiter(void 0, void 0, void 0, function* () {
+    if (typeof S3_BUCKET !== "string")
         return null;
+    const uploadParams = {
+        Bucket: S3_BUCKET,
+        Key: path,
+        Body: Buffer.from(imageData),
+        ContentType: "image/jpeg",
+        ACL: 'public-read',
+    };
+    s3.upload(uploadParams).promise().then(res => res.Location).catch(e => {
+        console.error("S3 UPLOAD ERROR: ", e);
     });
-}
-function deletePhotoFromS3(path) {
-    return __awaiter(this, void 0, void 0, function* () {
-        if (typeof S3_BUCKET !== "string")
-            return false;
-        try {
-            const params = {
-                Bucket: S3_BUCKET,
-                Key: path
-            };
-            yield s3.deleteObject(params).promise();
-            return true;
-        }
-        catch (e) {
-            console.error("S3 DELETE OBJECT ERROR: ", e);
-            return false;
-        }
-    });
-}
+    return null;
+});
+const deletePhotoFromS3 = (path) => __awaiter(void 0, void 0, void 0, function* () {
+    if (typeof S3_BUCKET !== "string")
+        return false;
+    const params = {
+        Bucket: S3_BUCKET,
+        Key: path
+    };
+    s3.deleteObject(params).promise().then((_) => true).catch(e => console.error("S3 DELETE OBJECT ERROR: ", e));
+    return false;
+});
 function emptyS3Directory(dir) {
     return __awaiter(this, void 0, void 0, function* () {
         if (typeof S3_BUCKET === "string") {
@@ -118,11 +104,11 @@ function retrieveFoodprint(id) {
 }
 exports.retrieveFoodprint = retrieveFoodprint;
 // Convert string to Uint8Array
-function parseImageData(str) {
+const parseImageData = (str) => {
     const strBytes = str.substring(1, str.length - 1).split(', ');
     const numBytes = strBytes.map((value) => Number(value));
     return new Uint8Array(numBytes);
-}
+};
 /// Responsible for saving the photo to db
 function savePhoto(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -210,13 +196,16 @@ function updateAvatarInS3(id, avatar_data, file_name) {
         const avatar_dir = id + "/avatar/";
         const new_path = id + "/avatar/" + file_name;
         const data = parseImageData(avatar_data);
-        // Remove current avatar
-        yield emptyS3Directory(avatar_dir);
-        // Upload new avatar
-        const result = yield uploadImageToS3(new_path, data);
-        if (typeof result === "string") {
-            // Successful
-            return result;
+        try {
+            // Remove current avatar
+            yield emptyS3Directory(avatar_dir);
+            // Upload new avatar
+            const result = yield uploadImageToS3(new_path, data);
+            if (typeof result === "string")
+                return result;
+        }
+        catch (e) {
+            console.error("ERROR UPDATING AVATAR", e);
         }
         return false;
     });

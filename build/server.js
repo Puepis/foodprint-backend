@@ -5,9 +5,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const multer_1 = __importDefault(require("multer"));
-var upload = multer_1.default();
+const upload = multer_1.default();
 const cors = require("cors");
-var corsConfig = {
+const corsConfig = {
     origin: "*",
     // origin: "https://enigma-01.github.io",
     allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']

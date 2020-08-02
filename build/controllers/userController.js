@@ -51,33 +51,36 @@ function registerUser(req, res) {
 exports.registerUser = registerUser;
 ;
 /// Generate a JWT for user authorization 
-function generateJWT(id, username, avatar_url) {
+const generateJWT = (sub, username, avatar_url) => {
     const payload = {
-        sub: id,
-        username: username,
-        avatar_url: avatar_url,
+        sub,
+        username,
+        avatar_url,
         admin: false,
     };
     const key = process.env.SIGNING_KEY;
-    if (typeof key === "string") {
-        // Sign the JWT
-        const token = jsonwebtoken_1.default.sign(payload, key, { algorithm: 'HS256', expiresIn: "10 minutes" });
-        return token;
-    }
-    return null;
-}
+    if (typeof key !== "string")
+        return null;
+    // Sign the JWT
+    const token = jsonwebtoken_1.default.sign(payload, key, { algorithm: 'HS256', expiresIn: "10 minutes" });
+    return token;
+};
 /// Logic for logging in
 function loginUser(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         const { username, password } = req.body;
         try {
             const rows = (yield connection.query("SELECT id, username, password, avatar_url FROM users WHERE username = $1", [username])).rows;
+            if (!rows[0])
+                res.sendStatus(401);
             // User exists
-            if (rows[0]) {
+            else {
                 const hash = rows[0].password;
                 const match = yield bcrypt_1.default.compare(password, hash); // verify password
-                if (match) {
-                    var token = generateJWT(rows[0].id, rows[0].username, rows[0].avatar_url);
+                if (!match)
+                    res.sendStatus(401);
+                else {
+                    const token = generateJWT(rows[0].id, rows[0].username, rows[0].avatar_url);
                     if (typeof token === "string") {
                         res.status(200).send(token);
                     }
@@ -85,12 +88,6 @@ function loginUser(req, res) {
                         res.sendStatus(500);
                     }
                 }
-                else {
-                    res.sendStatus(401);
-                }
-            }
-            else {
-                res.sendStatus(401);
             }
         }
         catch (e) {
@@ -109,12 +106,10 @@ function getFoodprint(req, res) {
         const id = decoded.sub;
         const foodprint = yield photoController.retrieveFoodprint(id);
         // Could not retrieve foodprint
-        if (!foodprint) {
+        if (!foodprint)
             res.sendStatus(400);
-        }
-        else {
+        else
             res.status(200).json({ foodprint: foodprint });
-        }
     });
 }
 exports.getFoodprint = getFoodprint;
@@ -158,20 +153,17 @@ function changeAvatar(req, res) {
             const username = users[0].username;
             // Upload to S3 
             const result = yield photoController.updateAvatarInS3(id, avatar_data, file_name);
-            if (typeof result === "string") {
+            if (typeof result !== "string")
+                res.sendStatus(401);
+            else {
                 // Successful, save url to db
                 yield connection.query("UPDATE users SET avatar_url = $1 WHERE id = $2", [result, id]);
                 const token = generateJWT(id, username, result);
-                if (typeof token === "string") {
+                if (typeof token === "string")
                     res.status(200).send(token);
-                }
-                else {
+                else
                     res.sendStatus(401);
-                }
-                return;
             }
-            // Something went wrong
-            res.sendStatus(401);
         }
         catch (e) {
             console.error("ERROR UPDATING USER AVATAR: ", e);
@@ -197,7 +189,7 @@ function updateUsername(req, res) {
                 yield connection.query("UPDATE users SET username = $1 WHERE id = $2", [new_username, id]);
                 // Get user avatar
                 const users = (yield connection.query("SELECT avatar_url FROM users WHERE username = $1", [new_username])).rows;
-                var token = generateJWT(id, new_username, users[0].avatar_url);
+                const token = generateJWT(id, new_username, users[0].avatar_url);
                 if (typeof token === "string") {
                     res.status(200).send(token);
                 }

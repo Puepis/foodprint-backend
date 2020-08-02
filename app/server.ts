@@ -1,10 +1,10 @@
 
 import express from "express";
 import multer from "multer";
-var upload = multer();
+const upload = multer();
 import cors = require('cors');
 
-var corsConfig = {
+const corsConfig = {
     origin: "*",
     // origin: "https://enigma-01.github.io",
     allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
