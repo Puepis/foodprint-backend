@@ -26,10 +26,13 @@ const uploadImageToS3 = async (path: string, imageData: any): Promise<string | n
         ACL: 'public-read',
     };
 
-    s3.upload(uploadParams).promise().then(res => res.Location).catch(e => {
+    try {
+        return (await s3.upload(uploadParams).promise()).Location;
+    }
+    catch (e) {
         console.error("S3 UPLOAD ERROR: ", e);
-    });
-    return null;
+        return null;
+    }
 }
 
 const deletePhotoFromS3 = async (path: string): Promise<boolean> => {
@@ -39,9 +42,14 @@ const deletePhotoFromS3 = async (path: string): Promise<boolean> => {
         Bucket: S3_BUCKET,
         Key: path
     }
-    s3.deleteObject(params).promise().then((_) => true).catch(e =>
-        console.error("S3 DELETE OBJECT ERROR: ", e));
-    return false;
+    try {
+        await s3.deleteObject(params).promise();
+        return true;
+    }
+    catch (e) {
+        console.error("S3 DELETE OBJECT ERROR: ", e);
+        return false;
+    }
 }
 
 export async function emptyS3Directory(dir: string): Promise<void> {

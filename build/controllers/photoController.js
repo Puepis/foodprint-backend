@@ -33,10 +33,13 @@ const uploadImageToS3 = (path, imageData) => __awaiter(void 0, void 0, void 0, f
         ContentType: "image/jpeg",
         ACL: 'public-read',
     };
-    s3.upload(uploadParams).promise().then(res => res.Location).catch(e => {
+    try {
+        return (yield s3.upload(uploadParams).promise()).Location;
+    }
+    catch (e) {
         console.error("S3 UPLOAD ERROR: ", e);
-    });
-    return null;
+        return null;
+    }
 });
 const deletePhotoFromS3 = (path) => __awaiter(void 0, void 0, void 0, function* () {
     if (typeof S3_BUCKET !== "string")
@@ -45,8 +48,14 @@ const deletePhotoFromS3 = (path) => __awaiter(void 0, void 0, void 0, function* 
         Bucket: S3_BUCKET,
         Key: path
     };
-    s3.deleteObject(params).promise().then((_) => true).catch(e => console.error("S3 DELETE OBJECT ERROR: ", e));
-    return false;
+    try {
+        yield s3.deleteObject(params).promise();
+        return true;
+    }
+    catch (e) {
+        console.error("S3 DELETE OBJECT ERROR: ", e);
+        return false;
+    }
 });
 function emptyS3Directory(dir) {
     return __awaiter(this, void 0, void 0, function* () {
