@@ -95,7 +95,7 @@ export async function retrieveFoodprint(id: number): Promise<any[] | null> {
     try {
         const restaurants = (await connection.query(restaurantQuery, [id])).rows;
         return await Promise.all(restaurants.map(async restaurant => {
-            const photos = (await connection.query(photoQuery, [restaurant.restaurant_id, id])).rows;
+            const photos = (await connection.query(photoQuery, [restaurant.place_id, id])).rows;
             return { ...restaurant, photos: photos }
         }));
     } catch (e) {
