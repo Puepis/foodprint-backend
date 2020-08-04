@@ -41,6 +41,7 @@ const uploadImageToS3 = (path, imageData) => __awaiter(void 0, void 0, void 0, f
         return null;
     }
 });
+// Delete a photo from the S3 bucket
 const deletePhotoFromS3 = (path) => __awaiter(void 0, void 0, void 0, function* () {
     if (typeof S3_BUCKET !== "string")
         return false;
@@ -57,6 +58,7 @@ const deletePhotoFromS3 = (path) => __awaiter(void 0, void 0, void 0, function* 
         return false;
     }
 });
+// Delete all photos in the given directory
 function emptyS3Directory(dir) {
     return __awaiter(this, void 0, void 0, function* () {
         if (typeof S3_BUCKET === "string") {
@@ -90,19 +92,14 @@ exports.emptyS3Directory = emptyS3Directory;
 // Sort photos by restaurant 
 function retrieveFoodprint(id) {
     return __awaiter(this, void 0, void 0, function* () {
-        const restaurantQuery = "SELECT id restaurant_id, name restaurant_name, rating restaurant_rating, \
-        lat restaurant_lat, lng restaurant_lng FROM restaurants r WHERE id IN ( \
-        SELECT DISTINCT restaurant_id FROM photos WHERE user_id = $1 \
-        ) ORDER BY r.name";
+        const restaurantQuery = "SELECT DISTINCT place_id FROM photos WHERE user_id = $1";
         const photoQuery = "SELECT path, url, photo_name, price, comments, time_taken, favourite FROM photos \
-        WHERE restaurant_id = $1 AND user_id = $2";
-        const typesQuery = "SELECT type FROM restaurant_types WHERE restaurant_id = $1";
+        WHERE place_id = $1 AND user_id = $2";
         try {
             const restaurants = (yield connection.query(restaurantQuery, [id])).rows;
             return yield Promise.all(restaurants.map((restaurant) => __awaiter(this, void 0, void 0, function* () {
                 const photos = (yield connection.query(photoQuery, [restaurant.restaurant_id, id])).rows;
-                const types = (yield connection.query(typesQuery, [restaurant.restaurant_id])).rows;
-                return Object.assign(Object.assign({}, restaurant), { photos: photos, restaurant_types: types });
+                return Object.assign(Object.assign({}, restaurant), { photos: photos });
             })));
         }
         catch (e) {
@@ -118,32 +115,19 @@ const parseImageData = (str) => {
     const numBytes = strBytes.map((value) => Number(value));
     return new Uint8Array(numBytes);
 };
-/// Responsible for saving the photo to db
+// Responsible for saving the photo to db
 function savePhoto(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         const user_id = req.body.userId;
-        const { path, favourite, details, location } = req.body.image;
+        const { path, favourite, details, place_id } = req.body.image;
         const data = parseImageData(req.body.image.data);
         // Store image data in S3 Bucket
         const url = yield uploadImageToS3(path, data);
         if (url) {
             try {
-                // 1. Check if restaurant exists in restaurant table, if not then insert
-                const saved_restaurants = (yield connection.query("SELECT name FROM restaurants WHERE id = $1", [location.id])).rows;
-                if (saved_restaurants.length == 0) {
-                    yield connection.query("INSERT INTO restaurants (id, name, rating, lat, lng) \
-                    VALUES ($1, $2, $3, $4, $5)", [location.id, location.name, location.rating, location.lat,
-                        location.lng]);
-                    const types = location.types;
-                    yield Promise.all(types.map((type) => __awaiter(this, void 0, void 0, function* () {
-                        yield connection.query("INSERT INTO restaurant_types (restaurant_id, type) \
-                    VALUES ($1, $2)", [location.id, type]);
-                    })));
-                }
-                // 2. Store image details in pgsql table
-                yield connection.query("INSERT INTO photos (path, url, user_id, photo_name, price, comments, restaurant_id, time_taken, favourite) \
+                yield connection.query("INSERT INTO photos (path, url, user_id, photo_name, price, comments, place_id, time_taken, favourite) \
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)", [path, url, user_id, details.name, details.price, details.comments,
-                    location.id, details.timestamp, favourite]);
+                    place_id, details.timestamp, favourite]);
             }
             catch (e) {
                 console.error("DATABASE QUERY ERROR: ", e);
@@ -182,6 +166,7 @@ function deletePhoto(req, res) {
 }
 exports.deletePhoto = deletePhoto;
 ;
+// Edit an existing user photo
 function editPhoto(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         const { path, photo_name, price, comments, favourite } = req.body;

@@ -1,9 +1,5 @@
 
 
-/*
- * This module defines the endpoints for restaurants
- */
-
 import express from 'express';
 const router = express.Router();
 

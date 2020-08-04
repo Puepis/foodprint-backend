@@ -35,6 +35,7 @@ const uploadImageToS3 = async (path: string, imageData: any): Promise<string | n
     }
 }
 
+// Delete a photo from the S3 bucket
 const deletePhotoFromS3 = async (path: string): Promise<boolean> => {
     if (typeof S3_BUCKET !== "string") return false;
 
@@ -52,6 +53,7 @@ const deletePhotoFromS3 = async (path: string): Promise<boolean> => {
     }
 }
 
+// Delete all photos in the given directory
 export async function emptyS3Directory(dir: string): Promise<void> {
     if (typeof S3_BUCKET === "string") {
         const listParams = {
@@ -85,23 +87,16 @@ export async function emptyS3Directory(dir: string): Promise<void> {
 
 // Sort photos by restaurant 
 export async function retrieveFoodprint(id: number): Promise<any[] | null> {
-    const restaurantQuery = "SELECT id restaurant_id, name restaurant_name, rating restaurant_rating, \
-        lat restaurant_lat, lng restaurant_lng FROM restaurants r WHERE id IN ( \
-        SELECT DISTINCT restaurant_id FROM photos WHERE user_id = $1 \
-        ) ORDER BY r.name";
+    const restaurantQuery = "SELECT DISTINCT place_id FROM photos WHERE user_id = $1";
 
     const photoQuery = "SELECT path, url, photo_name, price, comments, time_taken, favourite FROM photos \
-        WHERE restaurant_id = $1 AND user_id = $2";
-
-    const typesQuery = "SELECT type FROM restaurant_types WHERE restaurant_id = $1";
+        WHERE place_id = $1 AND user_id = $2";
 
     try {
         const restaurants = (await connection.query(restaurantQuery, [id])).rows;
         return await Promise.all(restaurants.map(async restaurant => {
-
             const photos = (await connection.query(photoQuery, [restaurant.restaurant_id, id])).rows;
-            const types = (await connection.query(typesQuery, [restaurant.restaurant_id])).rows;
-            return { ...restaurant, photos: photos, restaurant_types: types }
+            return { ...restaurant, photos: photos }
         }));
     } catch (e) {
         console.error("RETRIEVING FOODPRINT ERROR: ", e);
@@ -116,38 +111,21 @@ const parseImageData = (str: string) => {
     return new Uint8Array(numBytes);
 }
 
-/// Responsible for saving the photo to db
+// Responsible for saving the photo to db
 export async function savePhoto(req: any, res: any): Promise<void> {
 
 
     const user_id: number = req.body.userId;
-    const { path, favourite, details, location } = req.body.image;
+    const { path, favourite, details, place_id } = req.body.image;
     const data: Uint8Array = parseImageData(req.body.image.data);
 
     // Store image data in S3 Bucket
     const url: string | null = await uploadImageToS3(path, data);
     if (url) {
-
         try {
-            // 1. Check if restaurant exists in restaurant table, if not then insert
-            const saved_restaurants = (await connection.query("SELECT name FROM restaurants WHERE id = $1", [location.id])).rows;
-
-            if (saved_restaurants.length == 0) {
-                await connection.query("INSERT INTO restaurants (id, name, rating, lat, lng) \
-                    VALUES ($1, $2, $3, $4, $5)", [location.id, location.name, location.rating, location.lat,
-                location.lng]);
-
-                const types: any[] = location.types;
-                await Promise.all(types.map(async type => {
-                    await connection.query("INSERT INTO restaurant_types (restaurant_id, type) \
-                    VALUES ($1, $2)", [location.id, type]);
-                }));
-            }
-
-            // 2. Store image details in pgsql table
-            await connection.query("INSERT INTO photos (path, url, user_id, photo_name, price, comments, restaurant_id, time_taken, favourite) \
+            await connection.query("INSERT INTO photos (path, url, user_id, photo_name, price, comments, place_id, time_taken, favourite) \
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)", [path, url, user_id, details.name, details.price, details.comments,
-                location.id, details.timestamp, favourite]);
+                place_id, details.timestamp, favourite]);
 
         } catch (e) {
             console.error("DATABASE QUERY ERROR: ", e);
@@ -182,6 +160,7 @@ export async function deletePhoto(req: any, res: any): Promise<void> {
     }
 };
 
+// Edit an existing user photo
 export async function editPhoto(req: any, res: any): Promise<void> {
     const { path, photo_name, price, comments, favourite } = req.body;
     try {
