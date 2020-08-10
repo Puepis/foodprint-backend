@@ -1,19 +1,19 @@
 
 /*
- * Here we define the logic for our user controller
+ * Logic for modifying and retrieving user photos.
  */
 
 import connection = require('../config/dbConnection');
-import aws = require('../config/aws');
+import aws = require('aws-sdk');
+import { PutObjectRequest, ListObjectsV2Request, DeleteObjectsRequest, DeleteObjectRequest } from 'aws-sdk/clients/s3';
+import { Request, Response } from "express";
 import get from "lodash.get";
 
-const S3_BUCKET: string | undefined = process.env.S3_BUCKET_NAME;
+const S3_BUCKET: string = process.env.S3_BUCKET_NAME!;
 
-const s3 = new aws.S3(); // service object
+aws.config.update({ region: 'ca-central-1' });
+const s3 = new aws.S3();
 
-import dotenv from "dotenv";
-import { PutObjectRequest } from 'aws-sdk/clients/s3';
-dotenv.config();
 
 const uploadImageToS3 = async (path: string, imageData: any): Promise<string | null> => {
     if (typeof S3_BUCKET !== "string") return null;
@@ -39,12 +39,12 @@ const uploadImageToS3 = async (path: string, imageData: any): Promise<string | n
 const deletePhotoFromS3 = async (path: string): Promise<boolean> => {
     if (typeof S3_BUCKET !== "string") return false;
 
-    const params = {
+    const deleteParams: DeleteObjectRequest = {
         Bucket: S3_BUCKET,
         Key: path
     }
     try {
-        await s3.deleteObject(params).promise();
+        await s3.deleteObject(deleteParams).promise();
         return true;
     }
     catch (e) {
@@ -54,39 +54,37 @@ const deletePhotoFromS3 = async (path: string): Promise<boolean> => {
 }
 
 // Delete all photos in the given directory
-export async function emptyS3Directory(dir: string): Promise<void> {
-    if (typeof S3_BUCKET === "string") {
-        const listParams = {
-            Bucket: S3_BUCKET,
-            Prefix: dir
-        };
+export const emptyS3Directory = async (dir: string): Promise<void> => {
+    const listParams: ListObjectsV2Request = {
+        Bucket: S3_BUCKET,
+        Prefix: dir
+    };
 
-        // Get all objects from directory 
-        const listedObjects: any = await s3.listObjectsV2(listParams).promise();
+    // Get all objects from directory 
+    const listedObjects: any = await s3.listObjectsV2(listParams).promise();
 
-        if (!get(listedObjects, "Contents.length", null)) return;
+    if (!get(listedObjects, "Contents.length", null)) return;
 
-        let deleteObjects: any[] = [];
-        const deleteParams = {
-            Bucket: S3_BUCKET,
-            Delete: { Objects: deleteObjects }
-        };
+    let deleteObjects: any[] = [];
+    const deleteParams: DeleteObjectsRequest = {
+        Bucket: S3_BUCKET,
+        Delete: { Objects: deleteObjects }
+    };
 
-        // Add all objects to the delete array
-        listedObjects.Contents.forEach(({ Key }: any) => {
-            deleteParams.Delete.Objects.push({ Key });
-        });
+    // Add all objects to the delete array
+    listedObjects.Contents.forEach(({ Key }: any) => {
+        deleteParams.Delete.Objects.push({ Key });
+    });
 
-        // Delete objects
-        await s3.deleteObjects(deleteParams).promise();
+    // Delete objects
+    await s3.deleteObjects(deleteParams).promise();
 
-        // Continue deleting objects if there are more left
-        if (listedObjects.IsTruncated) await emptyS3Directory(dir);
-    }
+    // Continue deleting objects if there are more left
+    if (listedObjects.IsTruncated) await emptyS3Directory(dir);
 };
 
 // Sort photos by restaurant 
-export async function retrieveFoodprint(id: number): Promise<any[] | null> {
+export const retrieveFoodprint = async (id: number): Promise<any[] | null> => {
     const restaurantQuery = "SELECT DISTINCT place_id FROM photos WHERE user_id = $1";
 
     const photoQuery = "SELECT path, url, photo_name, price, comments, time_taken, favourite FROM photos \
@@ -112,7 +110,7 @@ const parseImageData = (str: string) => {
 }
 
 // Responsible for saving the photo to db
-export async function savePhoto(req: any, res: any): Promise<void> {
+export const savePhoto = async (req: Request, res: Response): Promise<void> => {
 
 
     const user_id: number = req.body.userId;
@@ -140,28 +138,30 @@ export async function savePhoto(req: any, res: any): Promise<void> {
 };
 
 // Delete a photo from the db and S3 
-export async function deletePhoto(req: any, res: any): Promise<void> {
+export const deletePhoto = async (req: Request, res: Response): Promise<void> => {
 
-    const path: string = req.headers['photo_path'];
+    const path: string | string[] | undefined = req.headers['photo_path'];
 
-    // First remove photo from S3, then remove table row
-    const successful: boolean = await deletePhotoFromS3(path);
-    if (successful) {
-        try {
-            await connection.query("DELETE FROM photos WHERE path = $1", [path]);
-            res.sendStatus(200);
-        } catch (e) {
-            console.error("ERROR DELETING PHOTO FROM DATABASE: ", e);
+    if (typeof path === "string") {
+        // First remove photo from S3, then remove table row
+        const successful: boolean = await deletePhotoFromS3(path);
+        if (successful) {
+            try {
+                await connection.query("DELETE FROM photos WHERE path = $1", [path]);
+                res.sendStatus(200);
+            } catch (e) {
+                console.error("ERROR DELETING PHOTO FROM DATABASE: ", e);
+                res.sendStatus(401);
+            }
+        }
+        else {
             res.sendStatus(401);
         }
-    }
-    else {
-        res.sendStatus(401);
     }
 };
 
 // Edit an existing user photo
-export async function editPhoto(req: any, res: any): Promise<void> {
+export const editPhoto = async (req: Request, res: Response): Promise<void> => {
     const { path, photo_name, price, comments, favourite } = req.body;
     try {
         await connection.query("UPDATE photos SET photo_name = $1, price = $2, comments = $3, favourite = $4 WHERE path = $5",
@@ -176,10 +176,10 @@ export async function editPhoto(req: any, res: any): Promise<void> {
 /*
  * Updates the user's avatar in S3. Returns either the image url or false.
  */
-export async function updateAvatarInS3(id: any, avatar_data: any, file_name: any): Promise<string | boolean> {
+export const updateAvatarInS3 = async (id: any, avatar_data: any, file_name: any): Promise<string | boolean> => {
 
-    const avatar_dir: string = id + "/avatar/";
-    const new_path = id + "/avatar/" + file_name;
+    const avatar_dir: string = `${id}/avatar/`;
+    const new_path: string = `${id}/avatar/${file_name}`;
     const data: Uint8Array = parseImageData(avatar_data);
 
     try {
@@ -196,4 +196,15 @@ export async function updateAvatarInS3(id: any, avatar_data: any, file_name: any
     return false;
 }
 
+export const updateFavourite = async (req: Request, res: Response): Promise<void> => {
+    const { path, favourite } = req.body;
+    try {
+        await connection.query("UPDATE photos SET favourite = $1 WHERE path = $2",
+            [favourite, path]);
+        res.sendStatus(200);
+    } catch (e) {
+        console.error("ERROR CHANGING PHOTO IN DATABASE: ", e);
+        res.sendStatus(401);
+    }
+};
 

@@ -1,6 +1,6 @@
 
 /*
- * This module defines the endpoints for users
+ * This module defines the endpoints for modifying the user's account.
  */
 
 import express from 'express';

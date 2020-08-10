@@ -1,6 +1,6 @@
 
 /*
- * This module defines the endpoints for users
+ * This module defines the endpoints for modifying the user's photos.
  */
 
 import express = require('express');
@@ -10,5 +10,6 @@ import controller = require('../../controllers/photoController');
 router.post('/', controller.savePhoto);
 router.put('/', controller.editPhoto);
 router.delete('/', controller.deletePhoto);
+router.put('/favourite', controller.deletePhoto);
 
 export = router;

@@ -1,20 +1,16 @@
 
 /*
- * Here we define the logic for our user controller
+ * Logic for user endpoints.
  */
 
-import jwt from "jsonwebtoken";
-import jwtDecode from 'jwt-decode';
+import { sign, verify } from "jsonwebtoken";
 import connection = require('../config/dbConnection');
-import bcrypt from 'bcrypt';
-import photoController = require('./photoController');
-
-/// Env variables
-import dotenv from "dotenv";
-dotenv.config();
+import { genSalt, hash, compare } from 'bcrypt';
+import { retrieveFoodprint, updateAvatarInS3, emptyS3Directory } from './photoController';
+import { Request, Response, NextFunction } from "express";
 
 /// Logic for registering a user 
-export async function registerUser(req: any, res: any): Promise<void> {
+export const registerUser = async (req: Request, res: Response): Promise<void> => {
 
     const { username, password } = req.body;
 
@@ -26,11 +22,11 @@ export async function registerUser(req: any, res: any): Promise<void> {
         }
         else {
             // Hash Password
-            const salt: any = await bcrypt.genSalt(10);
-            const hash: any = await bcrypt.hash(password, salt);
+            const salt: any = await genSalt(10);
+            const passwordHash: any = await hash(password, salt);
 
             await connection.query("INSERT INTO users (username, password) \
-            VALUES ($1, $2)", [username, hash]);
+            VALUES ($1, $2)", [username, passwordHash]);
 
             res.sendStatus(200);
         }
@@ -41,24 +37,19 @@ export async function registerUser(req: any, res: any): Promise<void> {
 };
 
 /// Generate a JWT for user authorization 
-const generateJWT = (sub: any, username: any, avatar_url: any): string | null => {
+const generateToken = (sub: any, username: any, avatar_url: any): string => {
     const payload = {
-        sub, // subject
+        sub,
         username,
         avatar_url,
-        admin: false,
     };
 
-    const key: string | undefined = process.env.SIGNING_KEY;
-    if (typeof key !== "string") return null;
-
     // Sign the JWT
-    const token: string = jwt.sign(payload, key, { algorithm: 'HS256', expiresIn: "10 minutes" });
-    return token;
+    return sign(payload, process.env.SIGNING_KEY!, { algorithm: 'HS256', expiresIn: "10 minutes" });
 }
 
 /// Logic for logging in
-export async function loginUser(req: any, res: any): Promise<void> {
+export const loginUser = async (req: Request, res: Response): Promise<void> => {
     const { username, password } = req.body;
 
     try {
@@ -68,16 +59,10 @@ export async function loginUser(req: any, res: any): Promise<void> {
         // User exists
         else {
             const hash = rows[0].password;
-            const match = await bcrypt.compare(password, hash); // verify password
+            const match = await compare(password, hash); // verify password
             if (!match) res.sendStatus(401);
             else {
-                const token: string | null = generateJWT(rows[0].id, rows[0].username, rows[0].avatar_url);
-                if (typeof token === "string") {
-                    res.status(200).send(token);
-                }
-                else {
-                    res.sendStatus(500);
-                }
+                res.status(200).send(generateToken(rows[0].id, rows[0].username, rows[0].avatar_url));
             }
         }
     } catch (e) {
@@ -87,12 +72,9 @@ export async function loginUser(req: any, res: any): Promise<void> {
 };
 
 /// Retrieve the user's foodprint
-export async function getFoodprint(req: any, res: any): Promise<void> {
-    const token: string = req.token;
-    const decoded: any = jwtDecode(token);
-    const id: number = decoded.sub;
-
-    const foodprint: any[] | null = await photoController.retrieveFoodprint(id);
+export const getFoodprint = async (req: Request, res: Response): Promise<void> => {
+    const { sub } = req.body.payload;
+    const foodprint: any[] | null = await retrieveFoodprint(sub);
 
     // Could not retrieve foodprint
     if (!foodprint) res.sendStatus(400);
@@ -100,42 +82,28 @@ export async function getFoodprint(req: any, res: any): Promise<void> {
 };
 
 // Check if authorization header is defined
-export function verifyToken(req: any, res: any, next: any): void {
+export const verifyToken = (req: Request, res: Response, next: NextFunction): void => {
+    const authorization: string | undefined = req.headers['authorization'];
 
-    const header: string | undefined = req.headers['authorization'];
-
-    if (typeof header !== 'undefined') {
-
-        const bearer: string[] = header.split(' ');
-        const token: string = bearer[1];
-        const key: string | undefined = process.env.SIGNING_KEY;
-
-        if (typeof key !== 'undefined') {
-
-            jwt.verify(token, key, async (err, payload: any) => {
-                if (err) {
-                    res.sendStatus(403); // unauthorized token
-
-                }
-                if (typeof payload !== "undefined") { // check for deprecated token 
-                    req.token = token;
-                    next();
-                }
-            });
-        }
-        else {
-            res.sendStatus(500); // config var not found 
-        }
-
+    if (!authorization) {
+        res.sendStatus(403);
     } else {
-        res.sendStatus(403); // header undefined
+        try {
+            const token = authorization.split(' ')[1];
+            const payload = verify(token, process.env.SIGNING_KEY!);
+            req.body.payload = payload;
+            next();
+        } catch (e) {
+            console.error("AUTHORIZATION ERROR: ", e);
+            res.sendStatus(403);
+        }
     }
 }
 
 /*
- * The logic for updating the user's avatar. A successful response contains the updated JWT
+ * The logic for updating the user's avatar. A successful response contains the updated JWT.
  */
-export async function changeAvatar(req: any, res: any): Promise<void> {
+export const changeAvatar = async (req: Request, res: Response): Promise<void> => {
     const { id, avatar_data, file_name } = req.body;
 
     try {
@@ -144,14 +112,12 @@ export async function changeAvatar(req: any, res: any): Promise<void> {
         const username = users[0].username;
 
         // Upload to S3 
-        const result: string | boolean = await photoController.updateAvatarInS3(id, avatar_data, file_name);
+        const result: string | boolean = await updateAvatarInS3(id, avatar_data, file_name);
         if (typeof result !== "string") res.sendStatus(401);
         else {
             // Successful, save url to db
             await connection.query("UPDATE users SET avatar_url = $1 WHERE id = $2", [result, id]);
-            const token = generateJWT(id, username, result);
-            if (typeof token === "string") res.status(200).send(token);
-            else res.sendStatus(401);
+            res.status(200).send(generateToken(id, username, result));
         }
     }
     catch (e) {
@@ -163,7 +129,7 @@ export async function changeAvatar(req: any, res: any): Promise<void> {
 /*
  * Logic for updating the user's username.
  */
-export async function updateUsername(req: any, res: any): Promise<void> {
+export const updateUsername = async (req: Request, res: Response): Promise<void> => {
     const { id, new_username } = req.body;
 
     try {
@@ -178,13 +144,7 @@ export async function updateUsername(req: any, res: any): Promise<void> {
 
             // Get user avatar
             const users = (await connection.query("SELECT avatar_url FROM users WHERE username = $1", [new_username])).rows;
-            const token: string | null = generateJWT(id, new_username, users[0].avatar_url);
-            if (typeof token === "string") {
-                res.status(200).send(token);
-            }
-            else {
-                res.sendStatus(500);
-            }
+            res.status(200).send(generateToken(id, new_username, users[0].avatar_url));
         }
 
     } catch (e) {
@@ -194,21 +154,21 @@ export async function updateUsername(req: any, res: any): Promise<void> {
 };
 
 /// Logic for updating the user's password
-export async function updatePassword(req: any, res: any): Promise<void> {
+export const updatePassword = async (req: Request, res: Response): Promise<void> => {
     const { id, old_password, new_password } = req.body;
 
     try {
         const rows = (await connection.query("SELECT password FROM users WHERE id = $1", [id])).rows;
 
         const prevHash = rows[0].password;
-        const match = await bcrypt.compare(old_password, prevHash); // verify password
+        const match = await compare(old_password, prevHash); // verify password
 
         // Correct password
         if (match) {
             // Hash Password
-            const salt: any = await bcrypt.genSalt(10);
-            const hash: any = await bcrypt.hash(new_password, salt);
-            await connection.query("UPDATE users SET password = $1 WHERE id = $2", [hash, id]);
+            const salt: any = await genSalt(10);
+            const passwordHash: any = await hash(new_password, salt);
+            await connection.query("UPDATE users SET password = $1 WHERE id = $2", [passwordHash, id]);
             res.sendStatus(200);
         }
         else {
@@ -220,22 +180,27 @@ export async function updatePassword(req: any, res: any): Promise<void> {
     }
 };
 
-export async function deleteUser(req: any, res: any): Promise<void> {
-    const id: string = req.headers['id'];
+export const deleteUser = async (req: Request, res: Response): Promise<void> => {
+    const id: string | string[] | undefined = req.headers['id'];
 
-    try {
-        // Remove all of the user's photos
-        await photoController.emptyS3Directory(id + '/');
-        await connection.query("DELETE FROM photos WHERE user_id = $1", [id]);
+    if (id) {
+        try {
+            // Remove all of the user's photos
+            await emptyS3Directory(`${id}/`);
+            await connection.query("DELETE FROM photos WHERE user_id = $1", [id]);
 
-        // Delete user from db 
-        await connection.query("DELETE FROM users WHERE id = $1", [id]);
+            // Delete user from db 
+            await connection.query("DELETE FROM users WHERE id = $1", [id]);
 
-        res.sendStatus(200);
+            res.sendStatus(200);
 
-    } catch (e) {
-        console.error("ERROR DELETING USER: ", e);
-        res.sendStatus(401);
+        } catch (e) {
+            console.error("ERROR DELETING USER: ", e);
+            res.sendStatus(401);
+        }
+    }
+    else {
+        res.sendStatus(403); // no id provided
     }
 };
 
