@@ -11,7 +11,6 @@ const corsConfig = {
     allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
 }
 
-// Create express app
 const app: express.Application = express();
 
 app.use(cors(corsConfig)); // Enable all CORS requests
@@ -27,11 +26,8 @@ app.use(upload.none());
 app.use(express.static('public')); // static files
 
 // Routes
-app.use('/api/users', require('./routes/api/users'));
-app.use('/api/photos', require('./routes/api/photos'));
-
-// Test endpoint - not needed
-app.use('/', require('./routes/api/test'));
+app.use('/api/users', require('./routes/users'));
+app.use('/api/photos', require('./routes/photos'));
 
 const PORT = process.env.PORT || 8080
 app.listen(PORT, () => console.log(`REST API server started on port ${PORT}`));

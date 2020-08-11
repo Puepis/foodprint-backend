@@ -13,7 +13,6 @@ const corsConfig = {
     // origin: "https://enigma-01.github.io",
     allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
 };
-// Create express app
 const app = express_1.default();
 app.use(cors(corsConfig)); // Enable all CORS requests
 // Parsing application/json
@@ -24,9 +23,7 @@ app.use(express_1.default.urlencoded({ extended: true, limit: '10mb' }));
 app.use(upload.none());
 app.use(express_1.default.static('public')); // static files
 // Routes
-app.use('/api/users', require('./routes/api/users'));
-app.use('/api/photos', require('./routes/api/photos'));
-// Test endpoint - not needed
-app.use('/', require('./routes/api/test'));
+app.use('/api/users', require('./routes/users'));
+app.use('/api/photos', require('./routes/photos'));
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => console.log(`REST API server started on port ${PORT}`));
