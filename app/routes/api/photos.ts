@@ -10,6 +10,6 @@ import controller = require('../../controllers/photoController');
 router.post('/', controller.savePhoto);
 router.put('/', controller.editPhoto);
 router.delete('/', controller.deletePhoto);
-router.put('/favourite', controller.deletePhoto);
+router.put('/favourite', controller.updateFavourite);
 
 export = router;
