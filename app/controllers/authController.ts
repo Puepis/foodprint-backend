@@ -118,12 +118,12 @@ export const refreshToken = async (
 
     // Refresh token is valid
     const accessToken = createAccessToken(
-      rows[0].id,
+      sub,
       rows[0].username,
       rows[0].avatar_url
     );
     const refreshToken = createRefreshToken(
-      rows[0].id,
+      sub,
       user.refresh_token_version
     );
 

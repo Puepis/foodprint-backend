@@ -91,8 +91,8 @@ exports.refreshToken = (req, res) => __awaiter(void 0, void 0, void 0, function*
             return;
         }
         // Refresh token is valid
-        const accessToken = auth_1.createAccessToken(rows[0].id, rows[0].username, rows[0].avatar_url);
-        const refreshToken = auth_1.createRefreshToken(rows[0].id, user.refresh_token_version);
+        const accessToken = auth_1.createAccessToken(sub, rows[0].username, rows[0].avatar_url);
+        const refreshToken = auth_1.createRefreshToken(sub, user.refresh_token_version);
         res.status(200).json({ accessToken, refreshToken });
     }
     catch (e) {
