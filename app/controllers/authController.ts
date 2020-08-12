@@ -96,6 +96,8 @@ export const refreshToken = async (
 
   // Check refresh token version
   const { sub, token_version } = payload;
+  console.log(payload);
+  
   try {
     const rows = (
       await connection.query(

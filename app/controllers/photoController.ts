@@ -34,11 +34,11 @@ export const retrieveFoodprint = async (id: number): Promise<any[] | null> => {
 // Save photo on server
 export const savePhoto = async (req: Request, res: Response): Promise<void> => {
   const user_id: number = req.body.userId;
-  const { path, favourite, details, place_id } = req.body.image;
-  const data: Uint8Array = parseImageData(req.body.image.data);
+  const { path, favourite, details, place_id, data } = req.body.image;
+  const imgData: Uint8Array = parseImageData(data);
 
   // Store image data in S3 Bucket
-  const url: string | null = await uploadImageToS3(path, data);
+  const url: string | null = await uploadImageToS3(path, imgData);
   if (url) {
     try {
       await connection.query(
