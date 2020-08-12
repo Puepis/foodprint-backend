@@ -32,10 +32,10 @@ exports.retrieveFoodprint = (id) => __awaiter(void 0, void 0, void 0, function* 
 // Save photo on server
 exports.savePhoto = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const user_id = req.body.userId;
-    const { path, favourite, details, place_id } = req.body.image;
-    const data = storage_1.parseImageData(req.body.image.data);
+    const { path, favourite, details, place_id, data } = req.body.image;
+    const imgData = storage_1.parseImageData(data);
     // Store image data in S3 Bucket
-    const url = yield storage_1.uploadImageToS3(path, data);
+    const url = yield storage_1.uploadImageToS3(path, imgData);
     if (url) {
         try {
             yield connection.query("INSERT INTO photos (path, url, user_id, photo_name, price, comments, \

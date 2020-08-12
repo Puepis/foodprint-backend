@@ -63,6 +63,7 @@ exports.loginUser = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
 });
 exports.refreshToken = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { refreshToken } = req.body;
+    console.log(refreshToken);
     if (!refreshToken) {
         res.sendStatus(403);
         return;
@@ -78,6 +79,7 @@ exports.refreshToken = (req, res) => __awaiter(void 0, void 0, void 0, function*
     }
     // Check refresh token version
     const { sub, token_version } = payload;
+    console.log(payload);
     try {
         const rows = (yield connection.query("SELECT username, avatar_url, refresh_token_version FROM users \
         WHERE id = $1", [sub])).rows;
