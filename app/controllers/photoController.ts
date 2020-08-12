@@ -33,7 +33,7 @@ export const retrieveFoodprint = async (id: number): Promise<any[] | null> => {
 
 // Save photo on server
 export const savePhoto = async (req: Request, res: Response): Promise<void> => {
-  const user_id: number = req.body.userId;
+  const { sub } = req.body.payload;
   const { path, favourite, details, place_id, data } = req.body.image;
   const imgData: Uint8Array = parseImageData(data);
 
@@ -48,7 +48,7 @@ export const savePhoto = async (req: Request, res: Response): Promise<void> => {
         [
           path,
           url,
-          user_id,
+          sub,
           details.name,
           details.price,
           details.comments,

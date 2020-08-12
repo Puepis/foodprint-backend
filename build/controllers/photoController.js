@@ -31,7 +31,7 @@ exports.retrieveFoodprint = (id) => __awaiter(void 0, void 0, void 0, function* 
 });
 // Save photo on server
 exports.savePhoto = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const user_id = req.body.userId;
+    const { sub } = req.body.payload;
     const { path, favourite, details, place_id, data } = req.body.image;
     const imgData = storage_1.parseImageData(data);
     // Store image data in S3 Bucket
@@ -43,7 +43,7 @@ exports.savePhoto = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)", [
                 path,
                 url,
-                user_id,
+                sub,
                 details.name,
                 details.price,
                 details.comments,
