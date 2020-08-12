@@ -44,7 +44,7 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
   try {
     const rows = (
       await connection.query(
-        "SELECT id, username, password, avatar_url refresh_token_version FROM \
+        "SELECT id, username, password, avatar_url, refresh_token_version FROM \
         users WHERE username = $1",
         [username]
       )
@@ -79,7 +79,6 @@ export const refreshToken = async (
   res: Response
 ): Promise<void> => {
   const { refreshToken } = req.body;
-  console.log(refreshToken);
   
 
   if (!refreshToken) {
