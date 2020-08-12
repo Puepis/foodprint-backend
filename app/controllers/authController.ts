@@ -79,6 +79,8 @@ export const refreshToken = async (
   res: Response
 ): Promise<void> => {
   const { refreshToken } = req.body;
+  console.log(refreshToken);
+  
 
   if (!refreshToken) {
     res.sendStatus(403);
