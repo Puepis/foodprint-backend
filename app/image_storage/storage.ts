@@ -12,6 +12,7 @@ const S3_BUCKET: string = process.env.S3_BUCKET_NAME!;
 aws.config.update({ region: "ca-central-1" });
 const s3 = new aws.S3();
 
+// Upload image file
 export const uploadImageToS3 = async (
   path: string,
   imageData: any
@@ -19,7 +20,6 @@ export const uploadImageToS3 = async (
   if (typeof S3_BUCKET !== "string") return null;
 
   const uploadParams: PutObjectRequest = {
-    // config
     Bucket: S3_BUCKET,
     Key: path,
     Body: Buffer.from(imageData),
@@ -82,6 +82,7 @@ export const emptyS3Directory = async (dir: string): Promise<void> => {
   if (listedObjects.IsTruncated) await emptyS3Directory(dir);
 };
 
+// Update the user's avatar
 export const updateAvatarInS3 = async (
   id: any,
   avatar_data: any,

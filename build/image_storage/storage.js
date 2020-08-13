@@ -18,11 +18,11 @@ const lodash_get_1 = __importDefault(require("lodash.get"));
 const S3_BUCKET = process.env.S3_BUCKET_NAME;
 aws.config.update({ region: "ca-central-1" });
 const s3 = new aws.S3();
+// Upload image file
 exports.uploadImageToS3 = (path, imageData) => __awaiter(void 0, void 0, void 0, function* () {
     if (typeof S3_BUCKET !== "string")
         return null;
     const uploadParams = {
-        // config
         Bucket: S3_BUCKET,
         Key: path,
         Body: Buffer.from(imageData),
@@ -79,6 +79,7 @@ exports.emptyS3Directory = (dir) => __awaiter(void 0, void 0, void 0, function* 
     if (listedObjects.IsTruncated)
         yield exports.emptyS3Directory(dir);
 });
+// Update the user's avatar
 exports.updateAvatarInS3 = (id, avatar_data, file_name) => __awaiter(void 0, void 0, void 0, function* () {
     const avatar_dir = `${id}/avatar/`;
     const new_path = `${id}/avatar/${file_name}`;

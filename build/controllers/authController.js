@@ -61,6 +61,7 @@ exports.loginUser = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         res.sendStatus(401);
     }
 });
+// Renew access token and refresh token
 exports.refreshToken = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { refreshToken } = req.body;
     if (!refreshToken) {
@@ -100,6 +101,7 @@ exports.refreshToken = (req, res) => __awaiter(void 0, void 0, void 0, function*
         res.sendStatus(401);
     }
 });
+// Invalidate all refresh tokens
 exports.revokeRefreshTokens = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.body;
     try {

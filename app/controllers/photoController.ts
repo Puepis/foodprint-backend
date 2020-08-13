@@ -31,7 +31,7 @@ export const retrieveFoodprint = async (id: number): Promise<any[] | null> => {
   }
 };
 
-// Save photo on server
+// Save new user photo
 export const savePhoto = async (req: Request, res: Response): Promise<void> => {
   const { sub } = req.body.payload;
   const { path, favourite, details, place_id, data } = req.body.image;
@@ -68,7 +68,7 @@ export const savePhoto = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-// Delete a photo from the db and S3
+// Delete a user photo
 export const deletePhoto = async (
   req: Request,
   res: Response
@@ -112,6 +112,7 @@ export const editPhoto = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
+// Update an existing photo's favourite option
 export const updateFavourite = async (
   req: Request,
   res: Response

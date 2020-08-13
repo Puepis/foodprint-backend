@@ -56,9 +56,7 @@ export const changeAvatar = async (
   }
 };
 
-/*
- * Logic for updating the user's username.
- */
+// Update username
 export const updateUsername = async (
   req: Request,
   res: Response
@@ -99,7 +97,7 @@ export const updateUsername = async (
   }
 };
 
-/// Logic for updating the user's password
+// Update user password
 export const updatePassword = async (
   req: Request,
   res: Response
@@ -134,6 +132,7 @@ export const updatePassword = async (
   }
 };
 
+// Delete the user's account
 export const deleteUser = async (
   req: Request,
   res: Response

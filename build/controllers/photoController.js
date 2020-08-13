@@ -29,7 +29,7 @@ exports.retrieveFoodprint = (id) => __awaiter(void 0, void 0, void 0, function* 
         return null;
     }
 });
-// Save photo on server
+// Save new user photo
 exports.savePhoto = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { sub } = req.body.payload;
     const { path, favourite, details, place_id, data } = req.body.image;
@@ -63,7 +63,7 @@ exports.savePhoto = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         res.sendStatus(401);
     }
 });
-// Delete a photo from the db and S3
+// Delete a user photo
 exports.deletePhoto = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { sub } = req.body.payload;
     const path = req.headers["photo_path"];
@@ -98,6 +98,7 @@ exports.editPhoto = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         res.sendStatus(401);
     }
 });
+// Update an existing photo's favourite option
 exports.updateFavourite = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { path, favourite, payload } = req.body;
     try {

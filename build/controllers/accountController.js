@@ -53,9 +53,7 @@ exports.changeAvatar = (req, res) => __awaiter(void 0, void 0, void 0, function*
         res.sendStatus(401);
     }
 });
-/*
- * Logic for updating the user's username.
- */
+// Update username
 exports.updateUsername = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { new_username, payload } = req.body;
     const id = payload.sub;
@@ -85,7 +83,7 @@ exports.updateUsername = (req, res) => __awaiter(void 0, void 0, void 0, functio
         res.sendStatus(401);
     }
 });
-/// Logic for updating the user's password
+// Update user password
 exports.updatePassword = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { old_password, new_password, payload } = req.body;
     const id = payload.sub;
@@ -113,6 +111,7 @@ exports.updatePassword = (req, res) => __awaiter(void 0, void 0, void 0, functio
         res.sendStatus(401);
     }
 });
+// Delete the user's account
 exports.deleteUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { payload } = req.body;
     const id = payload.sub;

@@ -74,6 +74,7 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
+// Renew access token and refresh token
 export const refreshToken = async (
   req: Request,
   res: Response
@@ -134,6 +135,7 @@ export const refreshToken = async (
   }
 };
 
+// Invalidate all refresh tokens
 export const revokeRefreshTokens = async (
   req: Request,
   res: Response
