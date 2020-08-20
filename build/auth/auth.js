@@ -15,6 +15,7 @@ exports.createRefreshToken = (sub, token_version) => {
 // Authorization middleware
 exports.verifyToken = (req, res, next) => {
     const authorization = req.headers["authorization"];
+    console.log("Verifying token");
     if (!authorization) {
         res.sendStatus(403);
         return;

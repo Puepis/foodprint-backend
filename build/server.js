@@ -6,6 +6,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 require("dotenv/config");
 const express_1 = __importDefault(require("express"));
 const multer_1 = __importDefault(require("multer"));
+const users_1 = __importDefault(require("./routes/users"));
+const photos_1 = __importDefault(require("./routes/photos"));
 const upload = multer_1.default();
 const cors = require("cors");
 const corsConfig = {
@@ -23,7 +25,7 @@ app.use(express_1.default.urlencoded({ extended: true, limit: '10mb' }));
 app.use(upload.none());
 app.use(express_1.default.static('public')); // static files
 // Routes
-app.use('/api/users', require('./routes/users'));
-app.use('/api/photos', require('./routes/photos'));
+app.use('/api/users', users_1.default);
+app.use('/api/photos', photos_1.default);
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => console.log(`REST API server started on port ${PORT}`));

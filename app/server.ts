@@ -2,6 +2,8 @@
 import "dotenv/config";
 import express from "express";
 import multer from "multer";
+import userRouter from "./routes/users";
+import photoRouter from "./routes/photos";
 const upload = multer();
 import cors = require('cors');
 
@@ -26,8 +28,8 @@ app.use(upload.none());
 app.use(express.static('public')); // static files
 
 // Routes
-app.use('/api/users', require('./routes/users'));
-app.use('/api/photos', require('./routes/photos'));
+app.use('/api/users', userRouter);
+app.use('/api/photos', photoRouter);
 
 const PORT = process.env.PORT || 8080
 app.listen(PORT, () => console.log(`REST API server started on port ${PORT}`));

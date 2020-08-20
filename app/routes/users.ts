@@ -22,10 +22,11 @@ router.post("/refresh_token", refreshToken);
 router.post("/revoke_token", revokeRefreshTokens);
 
 // Authorized user account endpoints
-router.get("/foodprint", verifyToken, getFoodprint);
-router.post("/avatar", verifyToken, changeAvatar);
-router.post("/change/password", verifyToken, updatePassword);
-router.post("/change/username", verifyToken, updateUsername);
-router.delete("/delete", verifyToken, deleteUser);
+router.use(verifyToken);
+router.get("/foodprint", getFoodprint);
+router.post("/avatar", changeAvatar);
+router.post("/change/password", updatePassword);
+router.post("/change/username", updateUsername);
+router.delete("/delete", deleteUser);
 
-module.exports = router;
+export = router;
