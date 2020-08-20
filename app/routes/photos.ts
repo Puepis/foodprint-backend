@@ -9,9 +9,10 @@ import { verifyToken } from "../auth/auth";
 const router = express.Router();
 
 // Authorized user photo endpoints
-router.post("/", verifyToken, savePhoto);
-router.put("/", verifyToken, editPhoto);
-router.delete("/", verifyToken, deletePhoto);
-router.put("/favourite", verifyToken, updateFavourite);
+router.use(verifyToken);
+router.post("/", savePhoto);
+router.put("/", editPhoto);
+router.delete("/", deletePhoto);
+router.put("/favourite", updateFavourite);
 
 export = router;
