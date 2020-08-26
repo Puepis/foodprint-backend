@@ -24,7 +24,6 @@ export const verifyToken = (
   next: NextFunction
 ): void => {
   const authorization: string | undefined = req.headers["authorization"];
-  console.log("Verifying token");
 
   if (!authorization) {
     res.sendStatus(403);
